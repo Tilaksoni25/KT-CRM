@@ -1,0 +1,153 @@
+### Kevalon ERP Auth Endpoints HTTP Requests Collection
+# This file is compatible with VS Code REST Client extension.
+
+@baseUrl = http://localhost:3000/api/auth
+
+# Store tokens for downstream request calls in your IDE editor
+@accessToken = YOUR_ACCESS_TOKEN
+@refreshToken = YOUR_REFRESH_TOKEN
+@resetToken = YOUR_RESET_PASSWORD_TOKEN
+@verificationToken = YOUR_EMAIL_VERIFICATION_TOKEN
+@sessionId = YOUR_SESSION_OBJECT_ID
+
+### 1. Register a new user
+POST {{baseUrl}}/register
+Content-Type: application/json
+
+{
+  "name": "Jane Doe",
+  "email": "jane.doe@example.com",
+  "password": "Password123",
+  "phone": "+12025550143"
+}
+
+
+### 2. Login (Without 2FA enabled initially)
+POST {{baseUrl}}/login
+Content-Type: application/json
+
+{
+  "email": "jane.doe@example.com",
+  "password": "Password123"
+}
+
+
+### 3. Get profile (/me) - Requires Access Token
+GET {{baseUrl}}/me
+Authorization: Bearer {{accessToken}}
+
+
+### 4. Send OTP (For 2FA Setup)
+POST {{baseUrl}}/send-otp
+Content-Type: application/json
+
+{
+  "email": "jane.doe@example.com",
+  "purpose": "2fa_setup"
+}
+
+
+### 5. Verify OTP (For 2FA Setup)
+# Get the 6-digit OTP code printed in the server logs/console and put it here
+POST {{baseUrl}}/verify-otp
+Content-Type: application/json
+
+{
+  "email": "jane.doe@example.com",
+  "otp": "123456",
+  "purpose": "2fa_setup"
+}
+
+
+### 6. Login again (With 2FA enabled now)
+# This will return "twoFactorRequired: true" and trigger server-side send-otp
+POST {{baseUrl}}/login
+Content-Type: application/json
+
+{
+  "email": "jane.doe@example.com",
+  "password": "Password123"
+}
+
+
+### 7. Verify OTP (For Login)
+# Get the 6-digit OTP code printed in the server logs/console and put it here
+POST {{baseUrl}}/verify-otp
+Content-Type: application/json
+
+{
+  "email": "jane.doe@example.com",
+  "otp": "123456",
+  "purpose": "login"
+}
+
+
+### 8. Refresh Token Rotation
+POST {{baseUrl}}/refresh-token
+Content-Type: application/json
+
+{
+  "refreshToken": "{{refreshToken}}"
+}
+
+
+### 9. Request Password Reset Link
+POST {{baseUrl}}/forgot-password
+Content-Type: application/json
+
+{
+  "email": "jane.doe@example.com"
+}
+
+
+### 10. Reset Password
+# Get the token from the email link printed in the server logs and place here
+POST {{baseUrl}}/reset-password
+Content-Type: application/json
+
+{
+  "token": "{{resetToken}}",
+  "newPassword": "NewPassword456"
+}
+
+
+### 11. Logout (Invalidates specific token)
+POST {{baseUrl}}/logout
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "refreshToken": "{{refreshToken}}"
+}
+
+
+### 12. Verify Email Address
+# Get the token from the verification link printed in the server logs/console
+POST {{baseUrl}}/verify-email
+Content-Type: application/json
+
+{
+  "token": "{{verificationToken}}"
+}
+
+
+### 13. Resend Verification Email
+# Always returns 200 regardless of whether email exists (anti-enumeration)
+POST {{baseUrl}}/resend-verification-email
+Content-Type: application/json
+
+{
+  "email": "jane.doe@example.com"
+}
+
+
+### 14. List Active Sessions (Device Management)
+# Returns all non-revoked, non-expired sessions for the logged-in user
+GET {{baseUrl}}/sessions
+Authorization: Bearer {{accessToken}}
+
+
+### 15. Revoke a Specific Session (Remote Logout)
+# Use the sessionId returned by GET /sessions
+DELETE {{baseUrl}}/sessions/{{sessionId}}
+Authorization: Bearer {{accessToken}}
