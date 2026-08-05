@@ -1,0 +1,37 @@
+### Kevalon ERP — Module 12: Journal Entry
+@baseUrl = http://localhost:5000/api
+@token = REPLACE_WITH_ACCESS_TOKEN
+@companyId = REPLACE_WITH_COMPANY_ID
+@financialYearId = REPLACE_WITH_FINANCIAL_YEAR_ID
+@debitAccountId = REPLACE_WITH_DEBIT_ACCOUNT_ID
+@creditAccountId = REPLACE_WITH_CREDIT_ACCOUNT_ID
+@journalEntryId = REPLACE_WITH_JOURNAL_ENTRY_ID
+
+### Create a balanced manual journal entry
+POST {{baseUrl}}/journal-entry
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "companyId": "{{companyId}}",
+  "financialYearId": "{{financialYearId}}",
+  "entryDate": "2025-04-01",
+  "reference": "ADJ-001",
+  "narration": "Manual adjustment",
+  "lines": [
+    { "accountId": "{{debitAccountId}}", "debit": 1000, "credit": 0, "remarks": "Debit line" },
+    { "accountId": "{{creditAccountId}}", "debit": 0, "credit": 1000, "remarks": "Credit line" }
+  ]
+}
+
+### List entries
+GET {{baseUrl}}/journal-entry?companyId={{companyId}}&financialYearId={{financialYearId}}&from=2025-04-01&to=2026-03-31
+Authorization: Bearer {{token}}
+
+### Get one entry
+GET {{baseUrl}}/journal-entry/{{journalEntryId}}
+Authorization: Bearer {{token}}
+
+### Reverse an entry (preserves original and creates opposite entry)
+DELETE {{baseUrl}}/journal-entry/{{journalEntryId}}
+Authorization: Bearer {{token}}

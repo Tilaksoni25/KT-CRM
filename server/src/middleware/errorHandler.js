@@ -34,6 +34,8 @@ const errorHandler = (err, req, res, next) => {
     message
   };
 
+  if (err.errorCode) response.errorCode = err.errorCode;
+
   // Only append stack trace in development or testing modes
   if (env.NODE_ENV !== 'production') {
     response.stack = err.stack;

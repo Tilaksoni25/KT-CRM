@@ -419,3 +419,25 @@ All endpoints require a bearer token and `companyId`. `financialYearId`, when su
 - **Module 13 — Ledger:** provide ledger balances and period filters for those reports.
 - **Module 3 — Chart of Accounts:** classify accounts for Trial Balance and Balance Sheet, and identify income/expense accounts for Profit & Loss.
 - **Module 25 — GST & Tax Master:** `getGstReport` calls `getGstReturnsSummary` when available; its GSTR-1/GSTR-3B detail mapping will be completed when Module 25 exposes those report values.
+
+---
+
+## Module 12: Journal Entry API
+
+Module 12 is the manual accounting posting layer. It creates balanced debit/credit journal entries for adjustments, accruals, depreciation, reversals, and similar accounting postings. All endpoints require a bearer token and are available under `/api/journal-entry`.
+
+| Method | Path | Purpose |
+|---|---|---|
+| POST | `/api/journal-entry` | Create a balanced manual entry |
+| GET | `/api/journal-entry?companyId=` | List entries, optionally filtered by financial year or date range |
+| GET | `/api/journal-entry/:id` | Get an entry and its account lines |
+| DELETE | `/api/journal-entry/:id` | Safely reverse an entry |
+
+Entries require at least two active ledger-account lines in the requested company. Each line has exactly one positive debit or credit amount; totals must balance. Financial years must belong to the company, be unlocked, and contain the entry date.
+
+DELETE performs a **soft reversal**: it keeps the original entry, marks it `isReversed: true`, and creates a separate opposite debit/credit entry linked through `reversedFrom` and `reversalEntryId`. History is never hard-deleted.
+
+### Future dependencies
+
+- **Module 13 — Ledger:** consume posted journal lines to create account-level ledger movements and balances.
+- **Module 14 — Reports:** aggregate these posted journal entries into Trial Balance, Profit & Loss, and Balance Sheet outputs.
