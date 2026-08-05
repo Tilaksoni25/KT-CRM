@@ -81,7 +81,7 @@ npm run start
 npm run test
 ```
 Tests use `mongodb-memory-server` — no external DB required.  
-**Current status: 58/58 tests passing** (Module 1: 16, Module 2: 23, Module 3: 19)
+**Current status: 76/76 tests passing** (Module 1: 16, Module 2: 23, Module 3: 19, Module 4: 18)
 
 ---
 
@@ -176,3 +176,39 @@ To cleanly connect later ledger and transaction postings modules, the following 
    * **TODO for Module 12 (Journal Entry) & Module 13 (Ledger):** Sum posted journal lines matching this `accountId` to compute the real-time balance.
 2. `hasTransactions(accountId)`: Returns `false`.
    * **TODO for Module 12 (Journal Entry) & Module 13 (Ledger):** Query transaction ledger lines referencing this `accountId` to block deleting accounts with postings.
+
+---
+
+## Module 4: Bank & Cash Accounts API Endpoints
+All endpoints have the base path `/api/bank-account`. Use [bankAccount_endpoints.http](file:///c:/Users/LENOVO/Desktop/KT-CRM/server/bankAccount_endpoints.http) with the VS Code REST Client extension to test interactively.
+
+| Method | Path | Auth | Purpose |
+|--------|------|------|---------|
+| POST | `/api/bank-account` | Yes | Create a new bank/cash/wallet/card account |
+| GET | `/api/bank-account?companyId=` | Yes | List all accounts for a company (masked numbers) |
+| GET | `/api/bank-account/:id` | Yes | Get detailed view of single account (unmasked number + balance) |
+| PUT | `/api/bank-account/:id` | Yes | Update account details (name, bankName, active, etc.) |
+| GET | `/api/bank-account/:id/ledger` | Yes | Retrieve ledger/transaction history for account |
+| POST | `/api/bank-account/:id/reconcile` | Yes | Reconcile bank statement lines against ledger |
+
+### Business Rules Enforced
+- **Auto-Linked COA Ledger Account:** Every bank/cash/wallet/card account must have exactly one corresponding ledger account in the Chart of Accounts (COA). Creating a bank account automatically creates this linked ledger account.
+  - `Cash` and `Wallet` types are linked under the seeded **"Current Assets"** group (code `1200`).
+  - `Savings`, `Current`, `CreditCard`, and `UPI` types are linked under the seeded **"Bank Accounts"** group (code `1220`).
+- **Data Isolation:** All read and write operations are scoped by `companyId` using company access middleware.
+- **Conditional Field Validation:** Enforced via Zod validation schemas:
+  - `Savings` / `Current` require: `bankName`, `accountNumber`, and `ifscCode`.
+  - `CreditCard` requires: `bankName` and `accountNumber`.
+  - `Cash` / `Wallet` / `UPI` do not require any banking details.
+- **Security & Account Number Masking:** The `accountNumber` is never returned in list responses (masked e.g. `"••••4821"`). It is defined as `select: false` on the Mongoose model schema and is only fetched and returned unmasked in the detail view.
+- **Immutable Fields:** After creation, `accountType`, `accountNumber`, and `coaAccountId` are immutable. Attempts to edit them return `400 Bad Request`.
+- **Syncing updates:** Updating the `accountName` or `isActive` status of a bank account automatically updates the corresponding linked COA ledger account.
+
+### Future Integration Points (Module 12/13 TODOs)
+To connect later ledger and statement reconciliation modules, the following placeholders are wired in `server/src/services/bankAccount.service.js`:
+1. `getAccountBalance(coaAccountId)`:
+   * **TODO for Module 12 & 13:** Sum posted journal lines matching the linked `coaAccountId` to compute the real-time balance.
+2. `getAccountLedger(coaAccountId, { from, to })`:
+   * **TODO for Module 13:** Fetch historical posted transactions for this ledger ID.
+3. `attemptAutoMatch(coaAccountId, statementLines)`:
+   * **TODO for Module 13:** Automatically match each uploaded statement line against this account's ledger entries with identical amounts, types (credit/debit), and dates within ±3 days. Currently returns all lines as `unmatched` until real ledger entries exist.

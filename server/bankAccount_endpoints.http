@@ -1,0 +1,108 @@
+### Kevalon ERP Module 4: Bank & Cash Accounts Endpoints HTTP Requests Collection
+# This file is compatible with the VS Code REST Client extension.
+
+@baseUrl = http://localhost:3000/api/bank-account
+@accessToken = YOUR_ACCESS_TOKEN
+@companyId = YOUR_COMPANY_ID
+@bankAccountId = YOUR_BANK_ACCOUNT_ID
+
+### 1. Create a New Bank Account (Savings/Current)
+# Creates a Savings account. Enforces validation of bankName, accountNumber, and ifscCode.
+# Automatically creates a linked COA account under "Bank Accounts" (code 1220).
+POST {{baseUrl}}
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "companyId": "{{companyId}}",
+  "accountType": "Savings",
+  "accountName": "HDFC Savings Account",
+  "bankName": "HDFC Bank",
+  "accountNumber": "501002938192",
+  "ifscCode": "HDFC0000123",
+  "branchName": "Kothrud Branch",
+  "openingBalance": 10000.00,
+  "openingBalanceDate": "2026-08-05T00:00:00.000Z"
+}
+
+
+### 2. Create a New Cash Account (Cash/Wallet)
+# Creates a Cash account. Does NOT require bankName, accountNumber, or ifscCode.
+# Automatically creates a linked COA account under "Current Assets" (code 1200).
+POST {{baseUrl}}
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "companyId": "{{companyId}}",
+  "accountType": "Cash",
+  "accountName": "Office Cash Drawer Box",
+  "openingBalance": 5000.00
+}
+
+
+### 3. List All Bank & Cash Accounts
+# Returns active accounts for the company.
+# accountNumber is returned in masked format (e.g., "••••8192").
+GET {{baseUrl}}?companyId={{companyId}}
+Authorization: Bearer {{accessToken}}
+
+
+### 4. List All Accounts (Including Inactive)
+# Returns all accounts for the company including disabled ones.
+GET {{baseUrl}}?companyId={{companyId}}&includeInactive=true
+Authorization: Bearer {{accessToken}}
+
+
+### 5. Get Single Bank Account Detail
+# Returns the detailed view of a bank account, including the UNMASKED accountNumber and the computed currentBalance.
+GET {{baseUrl}}/{{bankAccountId}}
+Authorization: Bearer {{accessToken}}
+
+
+### 6. Update Bank Account Details
+# Updates allow modifying accountName, bankName, ifscCode, branchName, and isActive.
+# Reject changes to accountType, accountNumber, and coaAccountId.
+# Updates to accountName and isActive automatically sync to the linked COA account document.
+PUT {{baseUrl}}/{{bankAccountId}}
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "accountName": "Updated HDFC Savings Account",
+  "branchName": "Kothrud Main Office",
+  "isActive": true
+}
+
+
+### 7. Get Account Ledger/Transaction History
+# Returns transaction ledger entries for the linked COA account (delegates to placeholder logic for now).
+GET {{baseUrl}}/{{bankAccountId}}/ledger?from=2026-08-01T00:00:00.000Z&to=2026-08-31T23:59:59.000Z
+Authorization: Bearer {{accessToken}}
+
+
+### 8. Reconcile Bank Account
+# Submits statement lines, persists them in a reconciliation document, and performs automated ledger matching.
+POST {{baseUrl}}/{{bankAccountId}}/reconcile
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "statementDate": "2026-08-05T00:00:00.000Z",
+  "statementLines": [
+    {
+      "date": "2026-08-04T12:00:00.000Z",
+      "description": "UPI Pay to Grocer",
+      "amount": 1500.00,
+      "type": "debit",
+      "referenceNo": "REF100293"
+    },
+    {
+      "date": "2026-08-05T09:30:00.000Z",
+      "description": "Interest Credited",
+      "amount": 350.00,
+      "type": "credit",
+      "referenceNo": "REF100294"
+    }
+  ]
+}

@@ -50,6 +50,18 @@ const checkCompanyAccess = async (req, res, next) => {
         }
         companyId = coa.companyId;
         req.coa = coa; // cache coa document
+      } else if (baseUrl.includes('bank-account')) {
+        const BankAccount = require('../models/BankAccount');
+        const bankAccount = await BankAccount.findById(req.params.id);
+        if (!bankAccount) {
+          return res.status(404).json({
+            success: false,
+            message: 'Bank account not found',
+            errorCode: 'BANK_ACCOUNT_NOT_FOUND'
+          });
+        }
+        companyId = bankAccount.companyId;
+        req.bankAccount = bankAccount; // cache bankAccount document
       }
     } else {
       companyId = req.body.companyId || req.query.companyId;
