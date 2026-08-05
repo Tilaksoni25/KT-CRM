@@ -1,0 +1,97 @@
+### Kevalon ERP Module 5: Customer Endpoints HTTP Requests Collection
+# This file is compatible with the VS Code REST Client extension.
+
+@baseUrl = http://localhost:3000/api/customer
+@accessToken = YOUR_ACCESS_TOKEN
+@companyId = YOUR_COMPANY_ID
+@customerId = YOUR_CUSTOMER_ID
+
+### 1. Create a New Customer (Success)
+# Creates a customer. Enforces validation of email format and optional GSTIN format.
+# Automatically creates a linked COA account under "Sundry Debtors" (code 1230).
+POST {{baseUrl}}
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "companyId": "{{companyId}}",
+  "name": "Acme Corporates India",
+  "gstin": "27ABCDE1234F1Z5",
+  "email": "contact@acme.com",
+  "phone": "9876543210",
+  "billingAddress": {
+    "line1": "Acme Tower, Suite 404",
+    "city": "Mumbai",
+    "state": "Maharashtra",
+    "pincode": "400001",
+    "country": "India"
+  },
+  "creditLimit": 100000,
+  "creditPeriodDays": 45,
+  "openingBalance": 12500.00,
+  "openingBalanceType": "Dr"
+}
+
+
+### 2. Create a New Customer (Invalid GSTIN Format)
+# Returns 400 Bad Request if the GSTIN is provided but does not match Indian standard regex format.
+POST {{baseUrl}}
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "companyId": "{{companyId}}",
+  "name": "Bad GSTIN Corp",
+  "gstin": "ABCDE1234FXXX",
+  "billingAddress": {
+    "line1": "Tech Park Lane",
+    "city": "Bengaluru",
+    "state": "Karnataka",
+    "pincode": "560001"
+  }
+}
+
+
+### 3. List Customers (Active, Search & Pagination)
+# Lists active customers for the company.
+# Query parameters: companyId (required), search (matches name, gstin, phone), page, limit.
+GET {{baseUrl}}?companyId={{companyId}}&search=Acme&page=1&limit=10
+Authorization: Bearer {{accessToken}}
+
+
+### 4. Get Single Customer Details
+# Returns the detailed view of a customer including the computed outstanding currentBalance.
+GET {{baseUrl}}/{{customerId}}
+Authorization: Bearer {{accessToken}}
+
+
+### 5. Update Customer details
+# Reject changes to coaAccountId. If GSTIN is modified, validate format and duplicate constraints.
+# Name and active state changes sync to the linked COA account.
+PUT {{baseUrl}}/{{customerId}}
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "name": "Acme Corporates India Ltd.",
+  "creditLimit": 150000,
+  "email": "billing@acme.com"
+}
+
+
+### 6. Get Customer Ledger History
+# Returns transaction outstanding balance details (delegates to placeholder logic for now).
+GET {{baseUrl}}/{{customerId}}/ledger?from=2026-08-01T00:00:00.000Z&to=2026-08-31T23:59:59.000Z
+Authorization: Bearer {{accessToken}}
+
+
+### 7. Get Customer Invoices List
+# Returns invoice details list (placeholder returning empty array for now).
+GET {{baseUrl}}/{{customerId}}/invoices
+Authorization: Bearer {{accessToken}}
+
+
+### 8. Deactivate Customer (Soft Delete)
+# Soft deletes (sets isActive: false) on the customer and the linked COA account to maintain historical reporting references.
+DELETE {{baseUrl}}/{{customerId}}
+Authorization: Bearer {{accessToken}}

@@ -9,6 +9,7 @@ const branchRoutes = require('./routes/branch.routes');
 const financialYearRoutes = require('./routes/financialYear.routes');
 const coaRoutes = require('./routes/coa.routes');
 const bankAccountRoutes = require('./routes/bankAccount.routes');
+const customerRoutes = require('./routes/customer.routes');
 const errorHandler = require('./middleware/errorHandler');
 
 const logger = pino({
@@ -58,6 +59,7 @@ app.use('/api/branch', branchRoutes);
 app.use('/api/financial-year', financialYearRoutes);
 app.use('/api/coa', coaRoutes);
 app.use('/api/bank-account', bankAccountRoutes);
+app.use('/api/customer', customerRoutes);
 
 // Catch-all route for unknown resources
 app.use((req, res, next) => {

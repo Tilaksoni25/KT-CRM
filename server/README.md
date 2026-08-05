@@ -81,7 +81,7 @@ npm run start
 npm run test
 ```
 Tests use `mongodb-memory-server` — no external DB required.  
-**Current status: 76/76 tests passing** (Module 1: 16, Module 2: 23, Module 3: 19, Module 4: 18)
+**Current status: 92/92 tests passing** (Module 1: 16, Module 2: 23, Module 3: 19, Module 4: 18, Module 5: 16)
 
 ---
 
@@ -212,3 +212,36 @@ To connect later ledger and statement reconciliation modules, the following plac
    * **TODO for Module 13:** Fetch historical posted transactions for this ledger ID.
 3. `attemptAutoMatch(coaAccountId, statementLines)`:
    * **TODO for Module 13:** Automatically match each uploaded statement line against this account's ledger entries with identical amounts, types (credit/debit), and dates within ±3 days. Currently returns all lines as `unmatched` until real ledger entries exist.
+
+---
+
+## Module 5: Customer API Endpoints
+All endpoints have the base path `/api/customer`. Use [customer_endpoints.http](file:///c:/Users/LENOVO/Desktop/KT-CRM/server/customer_endpoints.http) with the VS Code REST Client extension to test interactively.
+
+| Method | Path | Auth | Purpose |
+|--------|------|------|---------|
+| POST | `/api/customer` | Yes | Create a new customer (auto-creates linked Sundry Debtors ledger) |
+| GET | `/api/customer?companyId=` | Yes | List/search customers (paginated) |
+| GET | `/api/customer/:id` | Yes | Get single customer detail (with `currentBalance`) |
+| PUT | `/api/customer/:id` | Yes | Update customer (re-validates GSTIN, blocks `coaAccountId`) |
+| DELETE | `/api/customer/:id` | Yes | Deactivate customer (soft delete only) |
+| GET | `/api/customer/:id/ledger` | Yes | Customer ledger + outstanding balance |
+| GET | `/api/customer/:id/invoices` | Yes | Customer invoices (placeholder) |
+
+### Business Rules Enforced
+- **Auto-Linked COA Ledger Account:** Every customer is automatically linked to a new ledger account created under the seeded **"Sundry Debtors"** group (code `1230`). If the default COA hasn't been seeded, returns `409 Conflict`.
+- **GSTIN Validation:** Indian standard regex validated on create and update. Duplicate active GSTINs within the same company are rejected with `409 Conflict`. Same GSTIN across different companies is allowed.
+- **Data Isolation:** All operations are scoped by `companyId`. Cross-company access returns `403 Forbidden`.
+- **Immutable COA Link:** `coaAccountId` cannot be changed after creation.
+- **Soft Delete Only:** Delete always sets `isActive: false` (never removes the document). The linked COA ledger account is also deactivated.
+- **Name/Active Sync:** Updating customer `name` or `isActive` automatically syncs those changes to the linked COA account.
+- **Pagination:** List endpoint supports `page`, `limit`, `search` (regex on name/phone/gstin), and `includeInactive` query params.
+
+### Future Integration Points (Module 8/9/25 TODOs)
+The following placeholders are wired in `server/src/services/customer.service.js`:
+1. `validateGstin(gstin)`: Validates format only via regex.
+   * **TODO for Module 25 (GST & Tax Master):** Replace with a real GST checksum validation call to `/api/gst/validate-gstin`.
+2. `hasTransactions(customerId)`: Returns `false`.
+   * **TODO for Module 8 (Sales Invoice) & Module 9 (Payment):** Query linked invoices and payments to block hard-deleting customers with history.
+3. `GET /api/customer/:id/invoices`: Returns `[]`.
+   * **TODO for Module 8 (Sales Invoice):** Wire to the `Invoice` collection once it exists.

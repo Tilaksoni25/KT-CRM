@@ -62,6 +62,18 @@ const checkCompanyAccess = async (req, res, next) => {
         }
         companyId = bankAccount.companyId;
         req.bankAccount = bankAccount; // cache bankAccount document
+      } else if (baseUrl.includes('customer')) {
+        const Customer = require('../models/Customer');
+        const customer = await Customer.findById(req.params.id);
+        if (!customer) {
+          return res.status(404).json({
+            success: false,
+            message: 'Customer not found',
+            errorCode: 'CUSTOMER_NOT_FOUND'
+          });
+        }
+        companyId = customer.companyId;
+        req.customer = customer; // cache customer document
       }
     } else {
       companyId = req.body.companyId || req.query.companyId;
