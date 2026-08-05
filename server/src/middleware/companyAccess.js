@@ -74,6 +74,18 @@ const checkCompanyAccess = async (req, res, next) => {
         }
         companyId = customer.companyId;
         req.customer = customer; // cache customer document
+      } else if (baseUrl.includes('role')) {
+        const Role = require('../models/Role');
+        const role = await Role.findById(req.params.id);
+        if (!role) {
+          return res.status(404).json({
+            success: false,
+            message: 'Role not found',
+            errorCode: 'ROLE_NOT_FOUND'
+          });
+        }
+        companyId = role.companyId;
+        req.role = role; // cache role document
       }
     } else {
       companyId = req.body.companyId || req.query.companyId;

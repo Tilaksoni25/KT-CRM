@@ -81,7 +81,7 @@ npm run start
 npm run test
 ```
 Tests use `mongodb-memory-server` — no external DB required.  
-**Current status: 92/92 tests passing** (Module 1: 16, Module 2: 23, Module 3: 19, Module 4: 18, Module 5: 16)
+**Current status: 109/109 tests passing** (Module 1: 16, Module 2: 23, Module 3: 19, Module 4: 18, Module 5: 16, Module 23: 17)
 
 ---
 
@@ -245,3 +245,63 @@ The following placeholders are wired in `server/src/services/customer.service.js
    * **TODO for Module 8 (Sales Invoice) & Module 9 (Payment):** Query linked invoices and payments to block hard-deleting customers with history.
 3. `GET /api/customer/:id/invoices`: Returns `[]`.
    * **TODO for Module 8 (Sales Invoice):** Wire to the `Invoice` collection once it exists.
+
+---
+
+## Module 23: Roles & Permissions API Endpoints
+All endpoints have the base path `/api/role`. Use [role_endpoints.http](file:///c:/Users/LENOVO/Desktop/KT-CRM/server/role_endpoints.http) with the VS Code REST Client extension to test interactively.
+
+| Method | Path | Auth | Purpose |
+|--------|------|------|---------|
+| POST | `/api/role/seed-default` | Yes | Seed the 8 default system roles for a new company |
+| POST | `/api/role` | Yes | Create a new custom role |
+| GET | `/api/role?companyId=` | Yes | List all roles (system + custom), sorted system-first |
+| PUT | `/api/role/:id/permissions` | Yes | Merge-update a role's permission matrix |
+| DELETE | `/api/role/:id` | Yes | Delete a custom (non-system) role |
+
+### Permission Matrix
+Every role stores exactly **15 permission entries** — one per business module. The 15 fixed module keys are:
+
+```
+CompanySettings, UserManagement, MasterData, EmployeeDepartment, Accounting,
+Banking, CRM, Purchase, Inventory, ExpenseSalary, FixedAssets, Reports,
+Approvals, AuditLog, NotificationConfig
+```
+
+Each entry has one of 7 levels: `full`, `manage`, `entry`, `approve`, `view`, `own`, `none`.
+
+### 8 Default System Roles (seeded via `POST /api/role/seed-default`)
+
+| Role | isProtected | Notes |
+|------|-------------|-------|
+| Super Admin | **true** | All modules = `full`. Permissions **cannot** be edited, role **cannot** be deleted. |
+| Admin | false | Broad access, cannot delete audit logs. Permissions CAN be edited. |
+| Accountant | false | Entry-level accounting, full banking and reports. |
+| CA | false | Read-only with full audit and reports. |
+| Manager | false | Approval rights over CRM, Purchase, Expenses. |
+| Sales | false | Full CRM, own expenses, view inventory. |
+| HR | false | Full employee/department and expense/salary. |
+| Employee | false | Own records in department and salary only. |
+
+### Business Rules Enforced
+- **Complete 15-entry array:** Every role always stores all 15 modules — missing modules default to `none`. No sparse arrays ever.
+- **Super Admin is protected:** `isProtected: true` — permissions cannot be edited (403), role cannot be deleted (403).
+- **System roles undeleteable:** All 8 default roles have `isSystemRole: true`. DELETE returns 403. Their permissions (except Super Admin) CAN be edited.
+- **Custom roles deleteable:** Hard delete is used, gated by `hasUsersAssigned()` placeholder (always `false` until Module 16).
+- **Unique names per company:** Case-insensitive, enforced both in app logic and via MongoDB compound index `{ companyId, name }` with `strength: 2` collation.
+- **Idempotent seeding:** `seed-default` returns 409 if any `isSystemRole: true` already exists for the company.
+- **Data isolation:** All endpoints scoped by companyId via `checkCompanyAccess` middleware.
+
+### Migration Note — Role Strings
+If any earlier module currently stores a free-form role string (e.g. `user.role = 'admin'` in the `User` model), that field is **separate** from this Role collection and is used only for internal system-level auth bootstrapping. When **Module 16 (User Management)** is built, it must reference `Role._id` (not a string) for all company-level role assignments, using a structure like:
+```js
+// User.companyAccess[]
+{ companyId: ObjectId, roleId: ObjectId(ref: 'Role') }
+```
+
+### Future Integration Points
+1. `hasUsersAssigned(roleId)` in `role.service.js` — currently returns `false`.
+   * **TODO for Module 16 (User Management):** Query `User.companyAccess[].roleId` and return `true` if any user holds this role, to block deletion.
+2. Permission gate on role management endpoints:
+   * **TODO for Module 16:** Add middleware that verifies the calling user has at least `manage` level on `UserManagement` before allowing `POST /api/role`, `PUT .../permissions`, or `DELETE /api/role/:id`.
+

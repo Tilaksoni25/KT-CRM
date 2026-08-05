@@ -1,0 +1,153 @@
+### Kevalon ERP — Module 23: Roles & Permissions
+### Base URL: http://localhost:5000/api/role
+### Use VS Code REST Client extension to run these requests
+
+# ─────────────────────────────────────────────────────────────
+# STEP 1: Seed the 8 default system roles for a company
+#         Run this FIRST before any other role operation.
+# ─────────────────────────────────────────────────────────────
+
+@baseUrl = http://localhost:5000/api/role
+@token = REPLACE_WITH_ACCESS_TOKEN
+@companyId = REPLACE_WITH_COMPANY_ID
+
+### 1. Seed Default Roles
+POST {{baseUrl}}/seed-default
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "companyId": "{{companyId}}"
+}
+
+### 2. Attempt to seed again (expect 409 Conflict — idempotency check)
+POST {{baseUrl}}/seed-default
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "companyId": "{{companyId}}"
+}
+
+# ─────────────────────────────────────────────────────────────
+# STEP 2: List all roles (system first, then custom alphabetically)
+# ─────────────────────────────────────────────────────────────
+
+### 3. List All Roles for Company
+GET {{baseUrl}}?companyId={{companyId}}
+Authorization: Bearer {{token}}
+
+# ─────────────────────────────────────────────────────────────
+# STEP 3: Create a custom role
+# ─────────────────────────────────────────────────────────────
+
+### 4. Create Custom Role — "Inventory Manager"
+POST {{baseUrl}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "companyId": "{{companyId}}",
+  "name": "Inventory Manager",
+  "description": "Handles stock and purchase workflows only",
+  "permissions": [
+    { "module": "Inventory", "level": "full" },
+    { "module": "Purchase", "level": "manage" },
+    { "module": "Reports", "level": "view" }
+  ]
+}
+
+### 5. Create Custom Role — Duplicate Name (expect 409)
+POST {{baseUrl}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "companyId": "{{companyId}}",
+  "name": "INVENTORY MANAGER",
+  "permissions": []
+}
+
+### 6. Create Custom Role — Unknown module key (expect 400)
+POST {{baseUrl}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "companyId": "{{companyId}}",
+  "name": "Bad Role",
+  "permissions": [
+    { "module": "NonExistentModule", "level": "full" }
+  ]
+}
+
+# ─────────────────────────────────────────────────────────────
+# STEP 4: Edit a non-protected system role (e.g. Accountant)
+#         Replace :accountantRoleId with the actual _id from list
+# ─────────────────────────────────────────────────────────────
+
+@accountantRoleId = REPLACE_WITH_ACCOUNTANT_ROLE_ID
+
+### 7. Edit Accountant Permissions (expect 200 — allowed)
+PUT {{baseUrl}}/{{accountantRoleId}}/permissions
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "permissions": [
+    { "module": "AuditLog", "level": "full" },
+    { "module": "Reports", "level": "full" }
+  ]
+}
+
+### 8. Edit Accountant with Unknown Module (expect 400)
+PUT {{baseUrl}}/{{accountantRoleId}}/permissions
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "permissions": [
+    { "module": "FakeModule", "level": "view" }
+  ]
+}
+
+# ─────────────────────────────────────────────────────────────
+# STEP 5: Attempt to edit Super Admin (expect 403 — isProtected)
+#         Replace :superAdminRoleId with the actual _id
+# ─────────────────────────────────────────────────────────────
+
+@superAdminRoleId = REPLACE_WITH_SUPER_ADMIN_ROLE_ID
+
+### 9. Attempt to Edit Super Admin Permissions (expect 403)
+PUT {{baseUrl}}/{{superAdminRoleId}}/permissions
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "permissions": [
+    { "module": "AuditLog", "level": "none" }
+  ]
+}
+
+# ─────────────────────────────────────────────────────────────
+# STEP 6: Delete system role (expect 403) and custom role (200)
+# ─────────────────────────────────────────────────────────────
+
+@hrRoleId = REPLACE_WITH_HR_ROLE_ID
+@customRoleId = REPLACE_WITH_CUSTOM_ROLE_ID
+
+### 10. Delete HR system role (expect 403 — isSystemRole)
+DELETE {{baseUrl}}/{{hrRoleId}}
+Authorization: Bearer {{token}}
+
+### 11. Delete Super Admin (expect 403 — isSystemRole + isProtected)
+DELETE {{baseUrl}}/{{superAdminRoleId}}
+Authorization: Bearer {{token}}
+
+### 12. Delete Custom "Inventory Manager" role (expect 200)
+DELETE {{baseUrl}}/{{customRoleId}}
+Authorization: Bearer {{token}}
+
+### 13. Delete already-deleted role (expect 404)
+DELETE {{baseUrl}}/{{customRoleId}}
+Authorization: Bearer {{token}}
