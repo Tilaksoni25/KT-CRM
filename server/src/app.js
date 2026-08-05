@@ -11,6 +11,7 @@ const coaRoutes = require('./routes/coa.routes');
 const bankAccountRoutes = require('./routes/bankAccount.routes');
 const customerRoutes = require('./routes/customer.routes');
 const roleRoutes = require('./routes/role.routes');
+const userRoutes = require('./routes/user.routes');
 const errorHandler = require('./middleware/errorHandler');
 
 const logger = pino({
@@ -62,6 +63,7 @@ app.use('/api/coa', coaRoutes);
 app.use('/api/bank-account', bankAccountRoutes);
 app.use('/api/customer', customerRoutes);
 app.use('/api/role', roleRoutes);
+app.use('/api/user', userRoutes);
 
 // Catch-all route for unknown resources
 app.use((req, res, next) => {

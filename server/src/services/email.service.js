@@ -69,7 +69,23 @@ const sendVerificationEmail = async (toEmail, plainToken) => {
   return sendEmail({ to: toEmail, subject, text, html });
 };
 
+/**
+ * Send an invite link to a newly invited user (Module 16).
+ * Reuses Module 1's reset-password endpoint as the completion step — no new endpoint needed.
+ * @param {string} toEmail
+ * @param {string} plainToken - the raw (unhashed) invite token
+ * @param {string} inviterCompanyName - name of the company the user is being invited to
+ */
+const sendInviteEmail = async (toEmail, plainToken, inviterCompanyName) => {
+  const inviteLink = `${env.CLIENT_URL}/set-password?token=${plainToken}`;
+  const subject = `You've been invited to join ${inviterCompanyName} on Kevalon ERP`;
+  const text = `You have been invited to join ${inviterCompanyName} on Kevalon ERP.\n\nPlease click the link below to set your password and activate your account (valid for 48 hours):\n\n${inviteLink}\n\nIf you did not expect this invite, you can safely ignore this email.`;
+  const html = `<p>You have been invited to join <strong>${inviterCompanyName}</strong> on Kevalon ERP.</p><p>Please click the link below to set your password and activate your account (valid for 48 hours):</p><p><a href="${inviteLink}">${inviteLink}</a></p><p><em>If you did not expect this invite, you can safely ignore this email.</em></p>`;
+  return sendEmail({ to: toEmail, subject, text, html });
+};
+
 module.exports = {
   sendEmail,
-  sendVerificationEmail
+  sendVerificationEmail,
+  sendInviteEmail
 };

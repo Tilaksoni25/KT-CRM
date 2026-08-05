@@ -98,6 +98,15 @@ const login = async (req, res, next) => {
       });
     }
 
+    // Guard against invited users who haven't completed password setup yet
+    // (passwordHash is null until the invite link is used to set a password)
+    if (!user.passwordHash) {
+      return res.status(401).json({
+        success: false,
+        message: 'Your account was created via an invite. Please set your password using the invite link sent to your email before logging in.'
+      });
+    }
+
     // Compare passwords
     const isPasswordValid = await comparePassword(password, user.passwordHash);
 

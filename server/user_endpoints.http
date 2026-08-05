@@ -1,0 +1,174 @@
+### Kevalon ERP — Module 16: User Management
+### Base URL: http://localhost:5000/api/user
+### Use VS Code REST Client extension to run these requests
+
+@baseUrl = http://localhost:5000/api/user
+@adminToken = REPLACE_WITH_ADMIN_ACCESS_TOKEN
+@companyId = REPLACE_WITH_COMPANY_ID
+@secondCompanyId = REPLACE_WITH_SECOND_COMPANY_ID
+
+# ─────────────────────────────────────────────────────────────
+# SCENARIO A: Invite a brand-new user to companyA
+# ─────────────────────────────────────────────────────────────
+
+### 1. Invite New User (creates user with null password + sends invite email)
+POST {{baseUrl}}
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "companyId": "{{companyId}}",
+  "name": "Alice Sharma",
+  "email": "alice@example.com",
+  "phone": "+91-9876543210",
+  "role": "Accountant"
+}
+
+### 2. Invite same email to companyA again (expect 409 — already has access)
+POST {{baseUrl}}
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "companyId": "{{companyId}}",
+  "name": "Alice Sharma",
+  "email": "alice@example.com",
+  "role": "Manager"
+}
+
+# ─────────────────────────────────────────────────────────────
+# SCENARIO B: Invite the same existing user to a second company
+# (No new account — adds a companyAccess entry, returns 200)
+# ─────────────────────────────────────────────────────────────
+
+### 3. Grant Alice access to secondCompany (expect 200, not 201)
+POST {{baseUrl}}
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "companyId": "{{secondCompanyId}}",
+  "name": "Alice Sharma",
+  "email": "alice@example.com",
+  "role": "CA"
+}
+
+# ─────────────────────────────────────────────────────────────
+# SCENARIO C: List users for a company
+# ─────────────────────────────────────────────────────────────
+
+### 4. List all active users for companyA
+GET {{baseUrl}}?companyId={{companyId}}
+Authorization: Bearer {{adminToken}}
+
+### 5. List with search filter
+GET {{baseUrl}}?companyId={{companyId}}&search=alice
+Authorization: Bearer {{adminToken}}
+
+### 6. Paginated listing
+GET {{baseUrl}}?companyId={{companyId}}&page=1&limit=5
+Authorization: Bearer {{adminToken}}
+
+### 7. Include inactive users
+GET {{baseUrl}}?companyId={{companyId}}&includeInactive=true
+Authorization: Bearer {{adminToken}}
+
+# ─────────────────────────────────────────────────────────────
+# SCENARIO D: Update role and profile
+# Replace :userId with Alice's actual _id from step 1
+# ─────────────────────────────────────────────────────────────
+
+@userId = REPLACE_WITH_ALICE_USER_ID
+
+### 8. Update Alice's role in companyA only
+PUT {{baseUrl}}/{{userId}}
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "companyId": "{{companyId}}",
+  "role": "Manager"
+}
+
+### 9. Update Alice's global profile name (shared across companies)
+PUT {{baseUrl}}/{{userId}}
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "companyId": "{{companyId}}",
+  "name": "Alice Sharma-Updated",
+  "phone": "+91-9999999999"
+}
+
+### 10. Deactivate Alice in companyA only
+PUT {{baseUrl}}/{{userId}}
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "companyId": "{{companyId}}",
+  "isActive": false
+}
+
+# ─────────────────────────────────────────────────────────────
+# SCENARIO E: Revoke company access
+# ─────────────────────────────────────────────────────────────
+
+### 11. Revoke access (soft revoke — isActive: false, user account preserved)
+DELETE {{baseUrl}}/{{userId}}?companyId={{companyId}}
+Authorization: Bearer {{adminToken}}
+
+# ─────────────────────────────────────────────────────────────
+# SCENARIO F: Self-lockout guard
+# (caller tries to deactivate their own only active company)
+# ─────────────────────────────────────────────────────────────
+
+@selfToken = REPLACE_WITH_YOUR_OWN_ACCESS_TOKEN
+@selfId = REPLACE_WITH_YOUR_OWN_USER_ID
+
+### 12. Self-lockout guard — PUT (expect 400)
+PUT {{baseUrl}}/{{selfId}}
+Authorization: Bearer {{selfToken}}
+Content-Type: application/json
+
+{
+  "companyId": "{{companyId}}",
+  "isActive": false
+}
+
+### 13. Self-lockout guard — DELETE (expect 400)
+DELETE {{baseUrl}}/{{selfId}}?companyId={{companyId}}
+Authorization: Bearer {{selfToken}}
+
+# ─────────────────────────────────────────────────────────────
+# SCENARIO G: Permission gate — Employee attempting to invite
+# ─────────────────────────────────────────────────────────────
+
+@employeeToken = REPLACE_WITH_EMPLOYEE_ACCESS_TOKEN
+
+### 14. Employee attempts to invite user (expect 403 — insufficient permission)
+POST {{baseUrl}}
+Authorization: Bearer {{employeeToken}}
+Content-Type: application/json
+
+{
+  "companyId": "{{companyId}}",
+  "name": "Should Fail",
+  "email": "fail@example.com",
+  "role": "Sales"
+}
+
+# ─────────────────────────────────────────────────────────────
+# SCENARIO H: Login attempt for invited-but-not-activated user
+# Use POST /api/auth/login (not this module's endpoints)
+# ─────────────────────────────────────────────────────────────
+
+### 15. Login with invited email before setting password (expect 401 + clear message)
+POST http://localhost:5000/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "alice@example.com",
+  "password": "any-password"
+}

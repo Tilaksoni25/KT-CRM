@@ -17,6 +17,42 @@ const otpSchema = new mongoose.Schema({
   expiresAt: { type: Date }
 }, { _id: false });
 
+/**
+ * companyAccess sub-document.
+ * A single User can belong to multiple companies with different roles.
+ * Module 16 reads/writes role via this array — not the flat top-level `role` field.
+ * The top-level `role` field is kept for backward-compat with Module 1's auth bootstrapping only.
+ */
+const companyAccessSchema = new mongoose.Schema(
+  {
+    companyId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Company',
+      required: true
+    },
+    /**
+     * Free-form role string for now.
+     * Module 23 formalizes this into a real Role._id reference.
+     * When Module 23 is wired up, add: roleId: { type: ObjectId, ref: 'Role' }
+     * and populate via companyAccess[].roleId to get the full permission matrix.
+     */
+    role: {
+      type: String,
+      required: true,
+      default: 'employee'
+    },
+    isActive: { type: Boolean, default: true },
+    invitedAt: { type: Date },
+    /**
+     * Set to now() the first time this user completes password setup after being invited.
+     * Updated inside Module 1's reset-password handler once the user successfully
+     * sets their password via the invite link.
+     */
+    joinedAt: { type: Date, default: null }
+  },
+  { _id: true }
+);
+
 const userSchema = new mongoose.Schema({
   name: { type: String, required: true, trim: true },
   email: {
@@ -27,8 +63,16 @@ const userSchema = new mongoose.Schema({
     trim: true,
     index: true
   },
-  passwordHash: { type: String, required: true, select: false },
+  /**
+   * passwordHash is null for invited users who haven't completed the password-setup flow yet.
+   * Never call bcrypt.compare() against a null hash — Module 1's login guards against this.
+   */
+  passwordHash: { type: String, default: null, select: false },
   phone: { type: String, trim: true },
+  /**
+   * Legacy flat role field — used only for Module 1's auth bootstrapping (JWT payload, /me response).
+   * Module 16 and onward always reads/writes role via companyAccess[].role.
+   */
   role: { type: String, default: 'user' },
   isEmailVerified: { type: Boolean, default: false },
   twoFactorEnabled: { type: Boolean, default: false },
@@ -47,10 +91,19 @@ const userSchema = new mongoose.Schema({
   passwordResetExpires: { type: Date, select: false },
   emailVerificationTokenHash: { type: String, select: false },
   emailVerificationExpires: { type: Date, select: false },
-  companyId: { type: mongoose.Schema.Types.ObjectId, ref: 'Company', default: null }
+  companyId: { type: mongoose.Schema.Types.ObjectId, ref: 'Company', default: null },
+
+  // ── Module 16 addition ──────────────────────────────────────────────────
+  companyAccess: {
+    type: [companyAccessSchema],
+    default: []
+  }
 }, {
   timestamps: true
 });
+
+// Index on companyAccess.companyId for efficient GET /api/user?companyId= queries
+userSchema.index({ 'companyAccess.companyId': 1 });
 
 // Virtual method to check if user is locked
 userSchema.virtual('isLocked').get(function() {

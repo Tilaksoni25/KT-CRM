@@ -81,7 +81,7 @@ npm run start
 npm run test
 ```
 Tests use `mongodb-memory-server` — no external DB required.  
-**Current status: 109/109 tests passing** (Module 1: 16, Module 2: 23, Module 3: 19, Module 4: 18, Module 5: 16, Module 23: 17)
+**Current status: 124/124 tests passing** (Module 1: 16, Module 2: 23, Module 3: 19, Module 4: 18, Module 5: 16, Module 23: 17, Module 16: 15)
 
 ---
 
@@ -301,7 +301,68 @@ If any earlier module currently stores a free-form role string (e.g. `user.role 
 
 ### Future Integration Points
 1. `hasUsersAssigned(roleId)` in `role.service.js` — currently returns `false`.
-   * **TODO for Module 16 (User Management):** Query `User.companyAccess[].roleId` and return `true` if any user holds this role, to block deletion.
+   * **TODO (now complete in Module 16):** Wire to `User.companyAccess[].role` — query users whose active `companyAccess` entry for this company references this role name, to block deletion.
 2. Permission gate on role management endpoints:
-   * **TODO for Module 16:** Add middleware that verifies the calling user has at least `manage` level on `UserManagement` before allowing `POST /api/role`, `PUT .../permissions`, or `DELETE /api/role/:id`.
+   * **TODO (now complete in Module 16):** `requirePermission('UserManagement', 'manage')` middleware is available and wired to `/api/user`. Wire the same middleware to `/api/role` endpoints (POST, PUT, DELETE) in a follow-up pass.
 
+---
+
+## Module 16: User Management API Endpoints
+All endpoints have the base path `/api/user`. Use [user_endpoints.http](file:///c:/Users/LENOVO/Desktop/KT-CRM/server/user_endpoints.http) with the VS Code REST Client extension to test interactively.
+
+| Method | Path | Auth | Permission Required | Purpose |
+|--------|------|------|--------------------|---------|
+| POST | `/api/user` | Yes | UserManagement ≥ `manage` | Invite / add a user to a company |
+| GET | `/api/user?companyId=` | Yes | UserManagement ≥ `manage` | List all users with access to a company |
+| PUT | `/api/user/:id` | Yes | UserManagement ≥ `manage` | Update role / status / profile for a company |
+| DELETE | `/api/user/:id?companyId=` | Yes | UserManagement ≥ `manage` | Revoke a user's access to a company |
+
+### How Invite Flow Works
+1. Admin calls `POST /api/user` with `companyId`, `name`, `email`, `role`.
+2. **New email** — a `User` document is created with `passwordHash: null` (not usable for login), a 48-hour invite token is stored as `passwordResetTokenHash`, and an invite email is sent linking to `{CLIENT_URL}/set-password?token=...`.
+3. **Existing email** — no new account is created. A new `companyAccess` entry is pushed to the existing user's document. No email is sent (they already have credentials).
+4. Invitee clicks the link and calls `POST /api/auth/reset-password` (Module 1) with the token and their chosen password — no new endpoint needed.
+5. On first successful login, `companyAccess[].joinedAt` should be updated (TODO hook in `auth.controller.js` reset-password handler).
+
+### Business Rules Enforced
+- **One email = one User account:** Never creates duplicate accounts. Extending `companyAccess[]` instead.
+- **Null `passwordHash` login guard:** Module 1's login now rejects invited-but-not-activated users with a clear `401` message instead of crashing on `bcrypt.compare(password, null)`.
+- **Permission gate via Module 23:** All 4 endpoints require the caller to have at least `manage` on `UserManagement` in their Role's permission matrix. Company owners (creators) bypass the gate automatically.
+- **Data isolation per company:** `role` and `isActive` returned by `GET /api/user` are always from the specific `companyAccess` entry for the requested `companyId` — another company's role is never leaked.
+- **Self-lockout guard:** Neither `PUT` (setting `isActive: false`) nor `DELETE` can deactivate a user's last remaining active company access if the caller is that same user.
+- **Soft revoke only:** `DELETE` sets `companyAccess[].isActive: false` — never removes the User document (preserves historical record references).
+- **Role strings are free-form for now:** Roles are stored as strings (e.g. `"Admin"`, `"Accountant"`). They map to the seeded Role names in Module 23 for permission resolution. When Module 16 is upgraded, add `roleId: ObjectId(ref: 'Role')` to `companyAccess[]` and look up by ID for efficiency.
+- **48-hour invite token:** Configurable via `INVITE_TOKEN_EXPIRY_HOURS` env var (default `48`). Reuses Module 1's `passwordResetTokenHash` / `passwordResetExpires` fields — no new fields added.
+
+### Schema Changes to User Model
+```js
+// Added to existing User model (server/src/models/User.js)
+companyAccess: [{
+  companyId: ObjectId(ref: 'Company'),   // required
+  role: String,                           // free-form; maps to Module 23 role name
+  isActive: Boolean,                      // default: true
+  invitedAt: Date,
+  joinedAt: Date                          // null until invite is accepted
+}]
+```
+Index added: `{ 'companyAccess.companyId': 1 }` for efficient `GET /api/user?companyId=` queries.
+
+### New Middleware: `requirePermission(module, level)`
+Path: `server/src/middleware/requirePermission.js`
+
+Generic Module 23 permission gate. Resolves the caller's Role document by matching `companyAccess[].role` (name string) against the `Role` collection, then checks if the permission level for the given module meets the required minimum.
+
+**Level hierarchy (ascending):** `none` < `own` < `view` < `entry` < `approve` < `manage` < `full`
+
+Usage:
+```js
+router.post('/', authenticate, requirePermission('UserManagement', 'manage'), controller);
+```
+
+### Future Integration Points
+1. `companyAccess[].joinedAt`:
+   * **TODO:** Set to `now()` inside `auth.controller.js` `resetPassword` handler when an invited user (null passwordHash before reset) completes their first password setup.
+2. `companyAccess[].roleId` (ObjectId ref to Role):
+   * **TODO:** Add this field when the team is ready to migrate from free-form role strings to proper Role document references. Update `requirePermission.js` step 3 to look up by `_id` instead of name.
+3. `role.service.js hasUsersAssigned(roleId)`:
+   * **TODO:** Query `User.companyAccess` where `role === roleName && companyId === targetCompanyId && isActive` to block deletion of roles that are in use.
