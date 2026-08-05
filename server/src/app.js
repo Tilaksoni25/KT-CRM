@@ -17,6 +17,7 @@ const gstRoutes = require('./routes/gst.routes');
 const caPanelRoutes = require('./routes/caPanel.routes');
 const reportsRoutes = require('./routes/reports.routes');
 const journalEntryRoutes = require('./routes/journalEntry.routes');
+const ledgerRoutes = require('./routes/ledger.routes');
 const errorHandler = require('./middleware/errorHandler');
 
 const logger = pino({
@@ -74,6 +75,7 @@ app.use('/api/gst', gstRoutes);
 app.use('/api/ca-panel', caPanelRoutes);
 app.use('/api/reports', reportsRoutes);
 app.use('/api/journal-entry', journalEntryRoutes);
+app.use('/api/ledger', ledgerRoutes);
 
 // Catch-all route for unknown resources
 app.use((req, res, next) => {

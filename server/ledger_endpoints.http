@@ -1,0 +1,14 @@
+### Kevalon ERP — Module 13: Ledger
+@baseUrl = http://localhost:5000/api
+@token = REPLACE_WITH_ACCESS_TOKEN
+@companyId = REPLACE_WITH_COMPANY_ID
+@accountId = REPLACE_WITH_ACCOUNT_ID
+@financialYearId = REPLACE_WITH_FINANCIAL_YEAR_ID
+
+### Account ledger history
+GET {{baseUrl}}/ledger/{{accountId}}?companyId={{companyId}}&financialYearId={{financialYearId}}&from=2025-04-01&to=2026-03-31
+Authorization: Bearer {{token}}
+
+### Current account balance
+GET {{baseUrl}}/ledger/{{accountId}}/balance?companyId={{companyId}}&financialYearId={{financialYearId}}
+Authorization: Bearer {{token}}

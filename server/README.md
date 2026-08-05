@@ -441,3 +441,22 @@ DELETE performs a **soft reversal**: it keeps the original entry, marks it `isRe
 
 - **Module 13 — Ledger:** consume posted journal lines to create account-level ledger movements and balances.
 - **Module 14 — Reports:** aggregate these posted journal entries into Trial Balance, Profit & Loss, and Balance Sheet outputs.
+
+---
+
+## Module 13: Ledger API
+
+Module 13 is a **read-only account-wise transaction history layer** under `/api/ledger`. It derives chronological running balances from Module 12 Journal Entry lines and does not create or edit any accounting data.
+
+| Method | Path | Purpose |
+|---|---|---|
+| GET | `/api/ledger/:accountId?companyId=` | Full chronological ledger history |
+| GET | `/api/ledger/:accountId/balance?companyId=` | Current account balance summary |
+
+Both endpoints validate company ownership, account ownership, optional financial-year ownership, and optional `from`/`to` date ranges. Debit amounts increase a DR balance and credit amounts increase a CR balance. The balance endpoint returns an absolute `balance` plus `balanceType` (`DR` or `CR`).
+
+### Future integration points
+
+- **Module 12 — Journal Entry:** currently the live posting source for ledger lines, including reversal entries.
+- **Invoice, Payment, Purchase, Expense, and Salary modules:** merge their posted accounting movements in chronological order when they are implemented.
+- **Module 14 — Reports:** consume the resulting account balances for Trial Balance, Profit & Loss, and Balance Sheet calculations.
