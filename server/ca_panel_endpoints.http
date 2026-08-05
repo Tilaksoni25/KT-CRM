@@ -1,0 +1,53 @@
+### Kevalon ERP — Module 15: CA Panel Endpoints
+### Base URL: http://localhost:5000/api
+### Use VS Code REST Client extension to run these requests
+
+@baseUrl = http://localhost:5000/api
+@token = REPLACE_WITH_ACCESS_TOKEN
+@companyId = REPLACE_WITH_COMPANY_ID
+@financialYearId = REPLACE_WITH_FINANCIAL_YEAR_ID
+@mismatchedFinancialYearId = REPLACE_WITH_MISMATCHED_FINANCIAL_YEAR_ID
+
+# ─────────────────────────────────────────────────────────────
+# 1. CA DASHBOARD ENDPOINT
+# ─────────────────────────────────────────────────────────────
+
+### 1.1 Get CA Panel Dashboard (Successful view)
+GET {{baseUrl}}/ca-panel/dashboard?companyId={{companyId}}&financialYearId={{financialYearId}}
+Authorization: Bearer {{token}}
+
+### 1.2 Get Dashboard with Mismatched Financial Year (expect 400 Bad Request)
+GET {{baseUrl}}/ca-panel/dashboard?companyId={{companyId}}&financialYearId={{mismatchedFinancialYearId}}
+Authorization: Bearer {{token}}
+
+### 1.3 Get Dashboard without Financial Year (succeeds, returns null financialYear shape)
+GET {{baseUrl}}/ca-panel/dashboard?companyId={{companyId}}
+Authorization: Bearer {{token}}
+
+# ─────────────────────────────────────────────────────────────
+# 2. CONSOLIDATED AUDIT REPORT ENDPOINT
+# ─────────────────────────────────────────────────────────────
+
+### 2.1 Get Consolidated Audit Report (Without date range filter)
+GET {{baseUrl}}/ca-panel/audit-report?companyId={{companyId}}
+Authorization: Bearer {{token}}
+
+### 2.2 Get Consolidated Audit Report (With date range filter)
+GET {{baseUrl}}/ca-panel/audit-report?companyId={{companyId}}&from=2025-04-01&to=2026-03-31
+Authorization: Bearer {{token}}
+
+# ─────────────────────────────────────────────────────────────
+# 3. INCOME TAX SUMMARY ENDPOINT
+# ─────────────────────────────────────────────────────────────
+
+### 3.1 Get Income Tax Computation Summary (Successful view)
+GET {{baseUrl}}/ca-panel/income-tax-summary?companyId={{companyId}}&financialYearId={{financialYearId}}
+Authorization: Bearer {{token}}
+
+### 3.2 Get Income Tax Summary Missing financialYearId (expect 400 Bad Request)
+GET {{baseUrl}}/ca-panel/income-tax-summary?companyId={{companyId}}
+Authorization: Bearer {{token}}
+
+### 3.3 Get Income Tax Summary with non-existent financialYearId (expect 404 Not Found)
+GET {{baseUrl}}/ca-panel/income-tax-summary?companyId={{companyId}}&financialYearId=600000000000000000000000
+Authorization: Bearer {{token}}
