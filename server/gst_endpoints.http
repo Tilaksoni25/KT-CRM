@@ -1,0 +1,97 @@
+### Kevalon ERP — Module 25: GST & Tax Master Endpoints
+### Base URL: http://localhost:5000/api
+### Use VS Code REST Client extension to run these requests
+
+@baseUrl = http://localhost:5000/api
+@token = REPLACE_WITH_ACCESS_TOKEN
+@companyId = REPLACE_WITH_COMPANY_ID
+
+# ─────────────────────────────────────────────────────────────
+# TAX MASTER ENDPOINTS
+# ─────────────────────────────────────────────────────────────
+
+### 1. Seed Default GST Slabs (idempotent, seeded once)
+POST {{baseUrl}}/tax/seed-default
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "companyId": "{{companyId}}"
+}
+
+### 2. Attempt to seed again (expect 409 Conflict)
+POST {{baseUrl}}/tax/seed-default
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "companyId": "{{companyId}}"
+}
+
+### 3. List All Tax Rates for Company (sorted by ratePercent asc)
+GET {{baseUrl}}/tax?companyId={{companyId}}
+Authorization: Bearer {{token}}
+
+### 4. Create Custom Tax Rate
+POST {{baseUrl}}/tax
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "companyId": "{{companyId}}",
+  "name": "Custom GST 15%",
+  "ratePercent": 15,
+  "taxCategory": "Taxable",
+  "hsnSacApplicable": true
+}
+
+### 5. Create Duplicate Tax Rate Name (expect 409 Conflict)
+POST {{baseUrl}}/tax
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "companyId": "{{companyId}}",
+  "name": "custom gst 15%",
+  "ratePercent": 15,
+  "taxCategory": "Taxable"
+}
+
+# ─────────────────────────────────────────────────────────────
+# GST VALIDATION & RETURNS ENDPOINTS
+# ─────────────────────────────────────────────────────────────
+
+### 6. Validate Fully Valid GSTIN (Format and Checksum pass)
+POST {{baseUrl}}/gst/validate-gstin
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "gstin": "27GSPDE1234F1ZI"
+}
+
+### 7. Validate GSTIN with Correct Format but Wrong Checksum digit
+POST {{baseUrl}}/gst/validate-gstin
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "gstin": "27GSPDE1234F1Z8"
+}
+
+### 8. Validate Malformed GSTIN Format (fails format regex)
+POST {{baseUrl}}/gst/validate-gstin
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "gstin": "INVALID123"
+}
+
+### 9. Get GST Returns Summary (Placeholder shape)
+GET {{baseUrl}}/gst/returns-summary?companyId={{companyId}}
+Authorization: Bearer {{token}}
+
+### 10. Get GST Returns Summary with custom period
+GET {{baseUrl}}/gst/returns-summary?companyId={{companyId}}&period=2026-08
+Authorization: Bearer {{token}}

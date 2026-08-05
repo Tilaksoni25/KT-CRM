@@ -81,7 +81,7 @@ npm run start
 npm run test
 ```
 Tests use `mongodb-memory-server` — no external DB required.  
-**Current status: 124/124 tests passing** (Module 1: 16, Module 2: 23, Module 3: 19, Module 4: 18, Module 5: 16, Module 23: 17, Module 16: 15)
+**Current status: 137/137 tests passing** (Module 1: 16, Module 2: 23, Module 3: 19, Module 4: 18, Module 5: 16, Module 23: 17, Module 16: 15, Module 25: 13)
 
 ---
 
@@ -366,3 +366,34 @@ router.post('/', authenticate, requirePermission('UserManagement', 'manage'), co
    * **TODO:** Add this field when the team is ready to migrate from free-form role strings to proper Role document references. Update `requirePermission.js` step 3 to look up by `_id` instead of name.
 3. `role.service.js hasUsersAssigned(roleId)`:
    * **TODO:** Query `User.companyAccess` where `role === roleName && companyId === targetCompanyId && isActive` to block deletion of roles that are in use.
+
+---
+
+## Module 25: GST & Tax Master API Endpoints
+All endpoints require `Authorization: Bearer <accessToken>`. Use [gst_endpoints.http](file:///c:/Users/LENOVO/Desktop/KT-CRM/server/gst_endpoints.http) to test interactively.
+
+| Method | Path | Auth | Purpose |
+|--------|------|------|---------|
+| POST | `/api/tax/seed-default` | Yes | Seed standard Indian GST rates (0%, 0.25%, 3%, 5%, 12%, 18%, 28%, Exempt, Nil Rated) |
+| POST | `/api/tax` | Yes | Create a custom tax rate (e.g. `Custom GST 15%`) |
+| GET | `/api/tax?companyId=` | Yes | List tax rates for a company, sorted by ratePercent ascending |
+| POST | `/api/gst/validate-gstin` | Yes | Stateless validator for GSTIN format and check digit |
+| GET | `/api/gst/returns-summary?companyId=` | Yes | GST returns filing summary (GSTR-1/3B ready) placeholder |
+
+### GSTIN Checksum Algorithm
+The `validate-gstin` endpoint uses the standard 15-character verification system:
+- **Format:** standard pattern verification `^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$`
+- **Checksum:** computes sum of character indices mapping to factor `1, 2, 1, 2...` with reduction logic on overflow.
+- Core validation is exported as `validateGstin(gstin)` from `gst.service.js`.
+
+### Business Rules Enforced
+- **Idempotent seeding:** `seed-default` returns 409 if any `isSystemTax: true` already exists for the company.
+- **Unique names per company:** Enforced using compound index `{ companyId, name }` with case-insensitive collation.
+- **Stateless Validation:** `/api/gst/validate-gstin` returns a detailed analysis payload with HTTP 200 rather than crashing or throwing errors for invalid inputs.
+
+### Integration Points
+- **Module 5 (Customer) / Module 6 (Supplier) Validation:**
+  The `validateGstin` method in `customer.service.js` has been updated to call the validator function in `gst.service.js` directly.
+- **Transactions GST Summary:**
+  `getGstReturnsSummary` in `gst.service.js` is a placeholder that will aggregate taxable values and CGST/SGST/IGST breakdown once Module 8 (Sales Invoices) and Module 10 (Purchases) are built.
+

@@ -12,6 +12,8 @@ const bankAccountRoutes = require('./routes/bankAccount.routes');
 const customerRoutes = require('./routes/customer.routes');
 const roleRoutes = require('./routes/role.routes');
 const userRoutes = require('./routes/user.routes');
+const taxRoutes = require('./routes/tax.routes');
+const gstRoutes = require('./routes/gst.routes');
 const errorHandler = require('./middleware/errorHandler');
 
 const logger = pino({
@@ -64,6 +66,8 @@ app.use('/api/bank-account', bankAccountRoutes);
 app.use('/api/customer', customerRoutes);
 app.use('/api/role', roleRoutes);
 app.use('/api/user', userRoutes);
+app.use('/api/tax', taxRoutes);
+app.use('/api/gst', gstRoutes);
 
 // Catch-all route for unknown resources
 app.use((req, res, next) => {

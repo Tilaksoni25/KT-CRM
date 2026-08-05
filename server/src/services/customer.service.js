@@ -1,16 +1,17 @@
 const ChartOfAccount = require('../models/ChartOfAccount');
 const coaService = require('./coa.service');
+const gstService = require('./gst.service');
 
 /**
  * Validate GSTIN format using Indian GSTIN standard format.
- * TODO: replace with a call to Module 25's /api/gst/validate-gstin once that module exists.
+ * Uses the real validation logic from gst.service.js.
  * @param {string} gstin 
  * @returns {boolean} True if valid, throws 400 error if invalid
  */
 const validateGstin = (gstin) => {
   if (!gstin) return true;
-  const regex = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/;
-  if (!regex.test(gstin)) {
+  const result = gstService.validateGstin(gstin);
+  if (!result.isValidFormat) {
     const error = new Error('Invalid GSTIN format');
     error.statusCode = 400;
     throw error;
