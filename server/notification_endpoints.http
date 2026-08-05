@@ -1,0 +1,40 @@
+### Kevalon ERP — Module 20: Notifications, Reminders & Alerts
+@baseUrl = http://localhost:5000/api
+@token = REPLACE_WITH_ACCESS_TOKEN
+@userId = REPLACE_WITH_USER_ID
+@companyId = REPLACE_WITH_COMPANY_ID
+@notificationId = REPLACE_WITH_NOTIFICATION_ID
+@alertId = REPLACE_WITH_ALERT_ID
+
+### My notifications
+GET {{baseUrl}}/notifications?userId={{userId}}
+Authorization: Bearer {{token}}
+
+### Mark a notification read
+PUT {{baseUrl}}/notifications/{{notificationId}}/read
+Authorization: Bearer {{token}}
+
+### Configure a GST reminder
+POST {{baseUrl}}/reminders/config
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "companyId": "{{companyId}}",
+  "type": "GST",
+  "daysBefore": 7,
+  "enabled": true,
+  "channels": ["in-app", "email"]
+}
+
+### Scheduled reminders
+GET {{baseUrl}}/reminders?companyId={{companyId}}
+Authorization: Bearer {{token}}
+
+### Active alerts
+GET {{baseUrl}}/alerts?companyId={{companyId}}
+Authorization: Bearer {{token}}
+
+### Acknowledge alert
+PUT {{baseUrl}}/alerts/{{alertId}}/acknowledge
+Authorization: Bearer {{token}}

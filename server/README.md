@@ -460,3 +460,29 @@ Both endpoints validate company ownership, account ownership, optional financial
 - **Module 12 — Journal Entry:** currently the live posting source for ledger lines, including reversal entries.
 - **Invoice, Payment, Purchase, Expense, and Salary modules:** merge their posted accounting movements in chronological order when they are implemented.
 - **Module 14 — Reports:** consume the resulting account balances for Trial Balance, Profit & Loss, and Balance Sheet calculations.
+
+---
+
+## Module 20: Notification, Reminder & Alert Engine
+
+Module 20 provides persistent in-app notifications, reminder configurations, scheduled-reminder records, and operational alerts. Its endpoints are under `/api` and all require a bearer token.
+
+| Method | Path | Purpose |
+|---|---|---|
+| GET | `/api/notifications?userId=` | List the authenticated user's notifications |
+| PUT | `/api/notifications/:id/read` | Mark an owned notification as read |
+| POST | `/api/reminders/config` | Create a company reminder rule |
+| GET | `/api/reminders?companyId=` | List scheduled reminders |
+| GET | `/api/alerts?companyId=` | List unacknowledged active alerts |
+| PUT | `/api/alerts/:id/acknowledge` | Persist an alert acknowledgement |
+
+Reminder rules and alerts are stored in dedicated MongoDB collections. In the absence of a scheduler or alert generator, reminder and alert lists return valid empty `items` arrays. Notification read receipts and alert acknowledgements retain timestamps and the acting user for auditability.
+
+### Future integration points
+
+- **Module 8 Sales Invoice / payments:** due-date notifications and overdue-invoice alerts.
+- **Module 10 Purchase:** supplier-payment due reminders.
+- **Module 18 Inventory & Warehouse:** low-stock alerts.
+- **Module 19 Fixed Assets:** AMC and renewal reminders.
+- **Module 25 GST & Tax Master:** GST due-date reminders.
+- **Module 22 Audit Log / Module 21 Workflow & Approval:** event-driven notifications and approval alerts.
