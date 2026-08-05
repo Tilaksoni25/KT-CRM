@@ -1,0 +1,72 @@
+### Kevalon ERP Module 3: Chart of Accounts (COA) Endpoints HTTP Requests Collection
+# This file is compatible with VS Code REST Client extension.
+
+@baseUrl = http://localhost:3000/api/coa
+@accessToken = YOUR_ACCESS_TOKEN
+@companyId = YOUR_COMPANY_ID
+@accountId = YOUR_ACCOUNT_ID
+@parentGroupId = YOUR_PARENT_GROUP_ID
+
+### 1. Seed Default COA
+# Seeds the standard hierarchical Chart of Accounts (Asset, Liability, Equity, Income, Expense)
+POST {{baseUrl}}/seed-default
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "companyId": "{{companyId}}"
+}
+
+
+### 2. List Flat Chart of Accounts
+# Returns a flat array of all accounts sorted by code ascending
+GET {{baseUrl}}?companyId={{companyId}}
+Authorization: Bearer {{accessToken}}
+
+
+### 3. List Chart of Accounts as Nested Tree
+# Returns a recursively nested tree structure for rendering an expandable account tree
+GET {{baseUrl}}?companyId={{companyId}}&asTree=true
+Authorization: Bearer {{accessToken}}
+
+
+### 4. Create Custom Account under a Seeded Group
+# Creates a custom ledger or group account under a parent group (same company and type)
+POST {{baseUrl}}
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "companyId": "{{companyId}}",
+  "name": "HDFC Bank - Current A/c",
+  "type": "Asset",
+  "isGroup": false,
+  "parentId": "{{parentGroupId}}",
+  "openingBalance": 15000.00,
+  "openingBalanceType": "Dr"
+}
+
+
+### 5. Get Single Account Details
+# Returns the account document including computed currentBalance
+GET {{baseUrl}}/{{accountId}}
+Authorization: Bearer {{accessToken}}
+
+
+### 6. Update Account
+# Reject changes to type and isGroup, reject modifications to name/code/parentId for system accounts.
+PUT {{baseUrl}}/{{accountId}}
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "name": "Updated Account Name",
+  "isActive": true
+}
+
+
+### 7. Delete Account
+# Soft deletes (sets isActive: false) to prevent dangling historical references.
+# Rejects if system account, group containing children, or account with transactions.
+DELETE {{baseUrl}}/{{accountId}}
+Authorization: Bearer {{accessToken}}

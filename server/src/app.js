@@ -7,6 +7,7 @@ const authRoutes = require('./routes/auth.routes');
 const companyRoutes = require('./routes/company.routes');
 const branchRoutes = require('./routes/branch.routes');
 const financialYearRoutes = require('./routes/financialYear.routes');
+const coaRoutes = require('./routes/coa.routes');
 const errorHandler = require('./middleware/errorHandler');
 
 const logger = pino({
@@ -54,6 +55,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/company', companyRoutes);
 app.use('/api/branch', branchRoutes);
 app.use('/api/financial-year', financialYearRoutes);
+app.use('/api/coa', coaRoutes);
 
 // Catch-all route for unknown resources
 app.use((req, res, next) => {

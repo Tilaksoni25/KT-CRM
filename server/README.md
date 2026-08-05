@@ -81,7 +81,7 @@ npm run start
 npm run test
 ```
 Tests use `mongodb-memory-server` — no external DB required.  
-**Current status: 39/39 tests passing** (Module 1: 16, Module 2: 23)
+**Current status: 58/58 tests passing** (Module 1: 16, Module 2: 23, Module 3: 19)
 
 ---
 
@@ -139,3 +139,40 @@ Import [kevalon_module2.postman_collection.json](file:///c:/Users/LENOVO/Desktop
 - **FY Overlap:** Overlapping date ranges for the same company return `409 Conflict`.
 - **FY Lock:** Locked financial years cannot be re-locked. `isLocked`, `lockedAt`, and `lockedBy` are stamped on lock.
 - **Data Isolation:** All Module 2 endpoints enforce company-level access control — cross-company access returns `403 Forbidden`.
+
+---
+
+## Module 3: Chart of Accounts (COA) API Endpoints
+All endpoints have the base path `/api/coa`. Use [coa_endpoints.http](file:///c:/Users/LENOVO/Desktop/KT-CRM/server/coa_endpoints.http) with the VS Code REST Client extension to test interactively.
+
+| Method | Path | Auth | Purpose |
+|--------|------|------|---------|
+| POST | `/api/coa` | Yes | Create a custom account (group or ledger) |
+| GET | `/api/coa?companyId=` | Yes | List all accounts for a company (flat or tree structure) |
+| GET | `/api/coa/:id` | Yes | Get single account details (with calculated `currentBalance`) |
+| PUT | `/api/coa/:id` | Yes | Update an account (name, parentId, code, isActive) |
+| DELETE | `/api/coa/:id` | Yes | Delete an account (soft delete, only if unused) |
+| POST | `/api/coa/seed-default` | Yes | Seed the standard default COA for a new company |
+
+### Business Rules Enforced
+- **Account Type Blocks & Generation:** Custom accounts auto-generate a code if omitted, selecting the next number in the type block:
+  - Assets: `1000`–`1999`
+  - Liabilities: `2000`–`2999`
+  - Equity: `3000`–`3999`
+  - Income: `4000`–`4999`
+  - Expenses: `5000`–`5999`
+- **Validation Rules:**
+  - A ledger account (`isGroup: false`) can never be a parent.
+  - Parent and child must share the same `type` (e.g. Asset under Asset).
+  - Account codes must be unique within the company.
+- **System Account Guards:** Accounts flagged with `isSystemAccount: true` can never be deleted or renamed, and their codes or parentIds cannot be changed. Only `isActive` status can be toggled.
+- **Delete Guards:** Reject deleting a group account if it contains child accounts. Reject deleting an account if it contains associated transactions.
+- **Soft Delete:** Successful deletes are performed as soft deletes (`isActive = false`) to ensure historical references never dangle.
+- **Multi-Tenant Scoping:** All write and read routes validate `companyId` scoping. Cross-company access is blocked with a `403 Forbidden` response.
+
+### Future Integration Points (Module 12/13 TODOs)
+To cleanly connect later ledger and transaction postings modules, the following placeholders are wired in `server/src/services/coa.service.js`:
+1. `getAccountBalance(accountId)`: Returns the account's static `openingBalance`.
+   * **TODO for Module 12 (Journal Entry) & Module 13 (Ledger):** Sum posted journal lines matching this `accountId` to compute the real-time balance.
+2. `hasTransactions(accountId)`: Returns `false`.
+   * **TODO for Module 12 (Journal Entry) & Module 13 (Ledger):** Query transaction ledger lines referencing this `accountId` to block deleting accounts with postings.

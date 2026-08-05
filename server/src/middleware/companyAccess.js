@@ -38,6 +38,18 @@ const checkCompanyAccess = async (req, res, next) => {
         }
         companyId = fy.companyId;
         req.financialYear = fy; // cache financialYear document
+      } else if (baseUrl.includes('coa')) {
+        const ChartOfAccount = require('../models/ChartOfAccount');
+        const coa = await ChartOfAccount.findById(req.params.id);
+        if (!coa) {
+          return res.status(404).json({
+            success: false,
+            message: 'Account not found',
+            errorCode: 'ACCOUNT_NOT_FOUND'
+          });
+        }
+        companyId = coa.companyId;
+        req.coa = coa; // cache coa document
       }
     } else {
       companyId = req.body.companyId || req.query.companyId;
