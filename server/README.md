@@ -397,3 +397,25 @@ The `validate-gstin` endpoint uses the standard 15-character verification system
 - **Transactions GST Summary:**
   `getGstReturnsSummary` in `gst.service.js` is a placeholder that will aggregate taxable values and CGST/SGST/IGST breakdown once Module 8 (Sales Invoices) and Module 10 (Purchases) are built.
 
+---
+
+## Module 14: Reports API
+
+Module 14 is a **read-only aggregation layer**. It exposes Trial Balance, Profit & Loss, Balance Sheet, GST Payable, and JSON-placeholder export endpoints under `/api/reports`. It owns no collection and never writes to MongoDB.
+
+| Method | Path | Purpose |
+|---|---|---|
+| GET | `/api/reports/trial-balance` | Trial Balance |
+| GET | `/api/reports/profit-loss` | Profit & Loss Statement |
+| GET | `/api/reports/balance-sheet` | Balance Sheet |
+| GET | `/api/reports/gst` | GST Payable report |
+| GET | `/api/reports/{gst,trial-balance,profit-loss,balance-sheet}/export` | JSON placeholder export |
+
+All endpoints require a bearer token and `companyId`. `financialYearId`, when supplied, is validated against the company; optional `from` and `to` values use `YYYY-MM-DD`. Exports currently return `exportFormat: "json"`, `downloadUrl: null`, and the report payload—no files are created.
+
+### Future integration points
+
+- **Module 12 — Journal Entry:** use posted journal lines as the accounting source for Trial Balance, Profit & Loss, and Balance Sheet.
+- **Module 13 — Ledger:** provide ledger balances and period filters for those reports.
+- **Module 3 — Chart of Accounts:** classify accounts for Trial Balance and Balance Sheet, and identify income/expense accounts for Profit & Loss.
+- **Module 25 — GST & Tax Master:** `getGstReport` calls `getGstReturnsSummary` when available; its GSTR-1/GSTR-3B detail mapping will be completed when Module 25 exposes those report values.

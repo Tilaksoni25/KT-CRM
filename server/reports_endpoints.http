@@ -1,0 +1,37 @@
+### Kevalon ERP — Module 14: Reports
+@baseUrl = http://localhost:5000/api
+@token = REPLACE_WITH_ACCESS_TOKEN
+@companyId = REPLACE_WITH_COMPANY_ID
+@financialYearId = REPLACE_WITH_FINANCIAL_YEAR_ID
+
+### Trial Balance
+GET {{baseUrl}}/reports/trial-balance?companyId={{companyId}}&financialYearId={{financialYearId}}
+Authorization: Bearer {{token}}
+
+### Profit & Loss
+GET {{baseUrl}}/reports/profit-loss?companyId={{companyId}}&from=2025-04-01&to=2026-03-31
+Authorization: Bearer {{token}}
+
+### Balance Sheet
+GET {{baseUrl}}/reports/balance-sheet?companyId={{companyId}}
+Authorization: Bearer {{token}}
+
+### GST Payable Report
+GET {{baseUrl}}/reports/gst?companyId={{companyId}}
+Authorization: Bearer {{token}}
+
+### JSON placeholder exports
+GET {{baseUrl}}/reports/gst/export?companyId={{companyId}}
+Authorization: Bearer {{token}}
+
+###
+GET {{baseUrl}}/reports/trial-balance/export?companyId={{companyId}}&financialYearId={{financialYearId}}
+Authorization: Bearer {{token}}
+
+###
+GET {{baseUrl}}/reports/profit-loss/export?companyId={{companyId}}
+Authorization: Bearer {{token}}
+
+###
+GET {{baseUrl}}/reports/balance-sheet/export?companyId={{companyId}}
+Authorization: Bearer {{token}}
