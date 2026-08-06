@@ -44,7 +44,10 @@ const createBranch = async (req, res, next) => {
 
     return res.status(201).json({
       success: true,
-      data: branch
+      data: {
+        branchId: branch._id,
+        branch
+      }
     });
   } catch (error) {
     next(error);
