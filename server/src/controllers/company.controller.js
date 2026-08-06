@@ -44,16 +44,19 @@ const createCompany = async (req, res, next) => {
     });
 
     // Update creator's active company association
-    req.user.companyId = company._id;
-    req.user.companyCreated = true;
-    req.user.branchCreated = false;
-    req.user.financialYearCreated = false;
-    await req.user.save();
+  req.user.companyId = company._id;
+req.user.companyCreated = true;
+req.user.branchCreated = false;
+req.user.financialYearCreated = false;
 
-    return res.status(201).json({
-      success: true,
-      data: company
-    });
+await req.user.save();
+
+const updatedUser = await User.findById(req.user._id);
+
+console.log({
+  companyId: updatedUser.companyId,
+  companyCreated: updatedUser.companyCreated
+});
   } catch (error) {
     next(error);
   }
