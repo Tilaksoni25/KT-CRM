@@ -105,10 +105,20 @@ const listUsers = async (req, res, next) => {
       };
     }
 
-    const filter = {
-      ...matchActive,
-      ...searchFilter
-    };
+   const filter = {
+  $or: [
+    { companyId }, // Company Owner/Admin
+    {
+      companyAccess: {
+        $elemMatch: {
+          companyId,
+          ...(includeInactive === "true" ? {} : { isActive: true })
+        }
+      }
+    }
+  ],
+  ...searchFilter
+};
 
     const total = await User.countDocuments(filter);
 
