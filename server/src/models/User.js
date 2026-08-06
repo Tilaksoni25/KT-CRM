@@ -93,6 +93,13 @@ const userSchema = new mongoose.Schema({
   emailVerificationExpires: { type: Date, select: false },
   companyId: { type: mongoose.Schema.Types.ObjectId, ref: 'Company', default: null },
 
+  // Onboarding progress for the user's active company setup. These flags are also
+  // calculated from persisted company data during login so existing users work
+  // without a migration.
+  companyCreated: { type: Boolean, default: false },
+  branchCreated: { type: Boolean, default: false },
+  financialYearCreated: { type: Boolean, default: false },
+
   // ── Module 16 addition ──────────────────────────────────────────────────
   companyAccess: {
     type: [companyAccessSchema],

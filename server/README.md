@@ -496,6 +496,24 @@ For BANK_TRANSFER, CHEQUE, and UPI, an active company `bankAccountId` is require
 - **Module 12 Journal Entry:** bank-account-backed receipts create balanced entries; reversal is intentionally deferred to a future audited payment-reversal endpoint.
 - **Modules 13/14:** consume the Module 12 receipt journal entries for ledger and reporting.
 
+## Login Onboarding Routing
+
+`POST /api/auth/login` (and the successful two-factor `verify-otp` login response) includes an `onboarding` object. The frontend should navigate directly to the dashboard when `redirectTo` is `DASHBOARD`; otherwise it should open the company-registration page.
+
+```json
+{
+  "onboarding": {
+    "companyCreated": true,
+    "branchCreated": true,
+    "financialYearCreated": true,
+    "companyId": "...",
+    "redirectTo": "DASHBOARD"
+  }
+}
+```
+
+`redirectTo` is `COMPANY_REGISTRATION` only when the authenticated user has no existing company. The branch and financial-year flags are returned for an optional setup checklist on the dashboard.
+
 ## Module 20: Notification, Reminder & Alert Engine
 
 Module 20 provides persistent notification logs, reminder configurations, scheduled-reminder records, and operational alerts. Its endpoints are under `/api` and all require a bearer token. Notifications are limited to their owning user. Company reminders and alerts use the Module 23 `NotificationConfig` permission: `view` lists reminders/alerts, while `manage` creates reminder rules and acknowledges alerts.

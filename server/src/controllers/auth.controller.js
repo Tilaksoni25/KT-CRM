@@ -1,4 +1,7 @@
 const User = require('../models/User');
+const Company = require('../models/Company');
+const Branch = require('../models/Branch');
+const FinancialYear = require('../models/FinancialYear');
 const { hashPassword, comparePassword, hashSha256 } = require('../utils/hash');
 const { createSession, rotateSession, revokeSession, revokeAllSessions } = require('../services/token.service');
 const { sendEmail, sendVerificationEmail } = require('../services/email.service');
@@ -17,6 +20,33 @@ const maskEmail = (email) => {
   if (!name || !domain) return email;
   const maskedName = name[0] + '***';
   return `${maskedName}@${domain}`;
+};
+
+/**
+ * Return the UI routing decision after login. The company record is the source
+ * of truth, while the three User flags keep onboarding state easy to consume.
+ */
+const getOnboardingStatus = async (user) => {
+  const activeAccess = (user.companyAccess || []).find((access) => access.isActive);
+  const companyId = user.companyId || activeAccess?.companyId || null;
+  if (!companyId) {
+    return { companyCreated: false, branchCreated: false, financialYearCreated: false, companyId: null, redirectTo: 'COMPANY_REGISTRATION' };
+  }
+
+  const company = await Company.findById(companyId).select('_id');
+  if (!company) return { companyCreated: false, branchCreated: false, financialYearCreated: false, companyId: null, redirectTo: 'COMPANY_REGISTRATION' };
+  const [branchCreated, financialYearCreated] = await Promise.all([
+    Branch.exists({ companyId: company._id }), FinancialYear.exists({ companyId: company._id })
+  ]);
+  return {
+    companyCreated: true,
+    branchCreated: Boolean(branchCreated),
+    financialYearCreated: Boolean(financialYearCreated),
+    companyId: company._id.toString(),
+    // Company existence controls the requested first screen. Branch/FY flags
+    // let the dashboard show any remaining setup checklist.
+    redirectTo: 'DASHBOARD'
+  };
 };
 
 /**
@@ -150,6 +180,7 @@ const login = async (req, res, next) => {
 
     // Establish session
     const tokens = await createSession(user, req.ip, req.headers['user-agent']);
+    const onboarding = await getOnboardingStatus(user);
 
     logger.info({ userId: user._id }, `User logged in successfully`);
 
@@ -163,7 +194,8 @@ const login = async (req, res, next) => {
           name: user.name,
           email: user.email,
           role: user.role
-        }
+        },
+        onboarding
       }
     });
   } catch (error) {
@@ -391,6 +423,7 @@ const verifyOtpController = async (req, res, next) => {
     if (purpose === 'login') {
       // Complete login, issue tokens
       const tokens = await createSession(user, req.ip, req.headers['user-agent']);
+      const onboarding = await getOnboardingStatus(user);
       
       logger.info({ userId: user._id }, `2FA login successful`);
 
@@ -404,7 +437,8 @@ const verifyOtpController = async (req, res, next) => {
             name: user.name,
             email: user.email,
             role: user.role
-          }
+          },
+          onboarding
         }
       });
     } else if (purpose === '2fa_setup') {

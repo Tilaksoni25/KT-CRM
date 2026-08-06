@@ -1,4 +1,6 @@
 const FinancialYear = require('../models/FinancialYear');
+const Company = require('../models/Company');
+const User = require('../models/User');
 
 /**
  * POST /api/financial-year
@@ -40,6 +42,11 @@ const createFinancialYear = async (req, res, next) => {
       endDate: end,
       yearLabel
     });
+
+    // Store setup progress for the owner; auth login recomputes it as a
+    // fallback for companies that existed before this field was introduced.
+    const company = await Company.findById(companyId).select('createdBy');
+    if (company) await User.findByIdAndUpdate(company.createdBy, { financialYearCreated: true });
 
     return res.status(201).json({
       success: true,

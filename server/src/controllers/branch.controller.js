@@ -1,5 +1,7 @@
 const mongoose = require('mongoose');
 const Branch = require('../models/Branch');
+const Company = require('../models/Company');
+const User = require('../models/User');
 
 /**
  * POST /api/branch
@@ -34,6 +36,11 @@ const createBranch = async (req, res, next) => {
       isHeadOffice: shouldBeHeadOffice,
       status
     });
+
+    // Keep onboarding state in sync for the company owner. Login also derives
+    // this from Branch data, so existing records remain compatible.
+    const company = await Company.findById(companyId).select('createdBy');
+    if (company) await User.findByIdAndUpdate(company.createdBy, { branchCreated: true });
 
     return res.status(201).json({
       success: true,

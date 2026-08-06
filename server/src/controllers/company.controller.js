@@ -2,7 +2,7 @@ const Company = require('../models/Company');
 const User = require('../models/User');
 
 /**
- * POST /api/company
+ * POST /api/company 
  * Create a new company profile and link to creator
  */
 const createCompany = async (req, res, next) => {
@@ -45,6 +45,9 @@ const createCompany = async (req, res, next) => {
 
     // Update creator's active company association
     req.user.companyId = company._id;
+    req.user.companyCreated = true;
+    req.user.branchCreated = false;
+    req.user.financialYearCreated = false;
     await req.user.save();
 
     return res.status(201).json({
