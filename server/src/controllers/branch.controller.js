@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 const Branch = require('../models/Branch');
 const Company = require('../models/Company');
 const User = require('../models/User');
+const { determineNextStep } = require('../utils/onboarding');
 
 /**
  * POST /api/branch
@@ -9,6 +10,14 @@ const User = require('../models/User');
  */
 const createBranch = async (req, res, next) => {
   try {
+    if (!req.user.companyCreated) {
+      return res.status(403).json({
+        success: false,
+        message: 'Complete company setup first.',
+        nextStep: 'CREATE_COMPANY'
+      });
+    }
+
     const { companyId, branchName, address, city, state, pincode, isHeadOffice, status } = req.body;
 
     // Count existing branches for the company
@@ -37,21 +46,18 @@ const createBranch = async (req, res, next) => {
       status
     });
 
-    // Keep onboarding state in sync for the company owner. Login also derives
-    // this from Branch data, so existing records remain compatible.
-    const company = await Company.findById(companyId).select('createdBy');
-    if (company) {
-      await User.findByIdAndUpdate(company.createdBy, {
-        branchCreated: true,
-        branchId: branch._id
-      });
-    }
+    const updateFields = {
+      branchCreated: true,
+      branchId: branch._id
+    };
+
+    await User.findByIdAndUpdate(req.user._id, updateFields);
 
     return res.status(201).json({
       success: true,
       data: {
         branchId: branch._id,
-        branch
+        nextStep: 'CREATE_FINANCIAL_YEAR'
       }
     });
   } catch (error) {

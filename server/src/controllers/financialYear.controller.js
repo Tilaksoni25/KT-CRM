@@ -7,13 +7,35 @@ const User = require('../models/User');
  * Create a new Financial Year for a company
  */
 const createFinancialYear = async (req, res, next) => {
+  const session = await FinancialYear.startSession();
+  session.startTransaction();
+
   try {
+    if (!req.user.companyCreated) {
+      await session.abortTransaction();
+      return res.status(403).json({
+        success: false,
+        message: 'Complete company setup first.',
+        nextStep: 'CREATE_COMPANY'
+      });
+    }
+
+    if (!req.user.branchCreated) {
+      await session.abortTransaction();
+      return res.status(403).json({
+        success: false,
+        message: 'Complete branch setup first.',
+        nextStep: 'CREATE_BRANCH'
+      });
+    }
+
     const { companyId, startDate, endDate, yearLabel } = req.body;
 
     const start = new Date(startDate);
     const end = new Date(endDate);
 
     if (start >= end) {
+      await session.abortTransaction();
       return res.status(400).json({
         success: false,
         message: 'Start date must be before end date',
@@ -26,9 +48,10 @@ const createFinancialYear = async (req, res, next) => {
       companyId,
       startDate: { $lte: end },
       endDate: { $gte: start }
-    });
+    }).session(session);
 
     if (overlap) {
+      await session.abortTransaction();
       return res.status(409).json({
         success: false,
         message: 'This date range overlaps with an existing Financial Year for this company.',
@@ -36,37 +59,36 @@ const createFinancialYear = async (req, res, next) => {
       });
     }
 
-    const fy = await FinancialYear.create({
-      companyId,
-      startDate: start,
-      endDate: end,
-      yearLabel
-    });
+    const [fy] = await FinancialYear.create([
+      {
+        companyId,
+        startDate: start,
+        endDate: end,
+        yearLabel
+      }
+    ], { session });
 
-    // Store setup progress for the owner; auth login recomputes it as a
-    // fallback for companies that existed before this field was introduced.
     const updateFields = {
       financialYearCreated: true,
       financialYearId: fy._id
     };
 
-    const company = await Company.findById(companyId).select('createdBy');
-    if (company) {
-      await User.findByIdAndUpdate(company.createdBy, updateFields);
-    }
+    await User.findByIdAndUpdate(req.user._id, updateFields, { session });
 
-    // Also update the currently authenticated user to ensure the field is set
-    // for the user who is actually performing the operation.
-    if (!company || company.createdBy.toString() !== req.user._id.toString()) {
-      await User.findByIdAndUpdate(req.user._id, updateFields);
-    }
+    await session.commitTransaction();
 
     return res.status(201).json({
       success: true,
-      data: fy
+      data: {
+        financialYearId: fy._id,
+        nextStep: 'DASHBOARD'
+      }
     });
   } catch (error) {
+    await session.abortTransaction();
     next(error);
+  } finally {
+    session.endSession();
   }
 };
 

@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const authenticate = require('../middleware/authenticate');
 const checkCompanyAccess = require('../middleware/companyAccess');
+const requireOnboarding = require('../middleware/requireOnboarding');
 const requirePermission = require('../middleware/requirePermission');
 const caPanelController = require('../controllers/caPanel.controller');
 
@@ -10,6 +11,7 @@ router.get(
   '/dashboard',
   authenticate,
   checkCompanyAccess,
+  requireOnboarding,
   requirePermission('Reports', 'view'),
   caPanelController.getDashboard
 );

@@ -1,17 +1,30 @@
 const Company = require('../models/Company');
 const User = require('../models/User');
+const { shapeOnboardingUser, determineNextStep } = require('../utils/onboarding');
 
 /**
  * POST /api/company 
  * Create a new company profile and link to creator
  */
 const createCompany = async (req, res, next) => {
+  const session = await Company.startSession();
+  session.startTransaction();
+
   try {
+    if (req.user.companyCreated) {
+      return res.status(400).json({
+        success: false,
+        message: 'Company has already been created for this user',
+        errorCode: 'COMPANY_ALREADY_CREATED'
+      });
+    }
+
     const { name, gstin, pan, address, city, state, pincode, email, phone, logoUrl } = req.body;
 
     // Check for existing GSTIN or PAN conflicts
-    const existingGstin = await Company.findOne({ gstin: gstin.toUpperCase() });
+    const existingGstin = await Company.findOne({ gstin: gstin.toUpperCase() }).session(session);
     if (existingGstin) {
+      await session.abortTransaction();
       return res.status(409).json({
         success: false,
         message: 'A company with this GSTIN is already registered',
@@ -19,8 +32,9 @@ const createCompany = async (req, res, next) => {
       });
     }
 
-    const existingPan = await Company.findOne({ pan: pan.toUpperCase() });
+    const existingPan = await Company.findOne({ pan: pan.toUpperCase() }).session(session);
     if (existingPan) {
+      await session.abortTransaction();
       return res.status(409).json({
         success: false,
         message: 'A company with this PAN is already registered',
@@ -28,37 +42,49 @@ const createCompany = async (req, res, next) => {
       });
     }
 
-    // Create the company record
-    const company = await Company.create({
-      name,
-      gstin: gstin.toUpperCase(),
-      pan: pan.toUpperCase(),
-      address,
-      city,
-      state,
-      pincode,
-      email,
-      phone,
-      logoUrl,
-      createdBy: req.user._id
+    const [company] = await Company.create([
+      {
+        name,
+        gstin: gstin.toUpperCase(),
+        pan: pan.toUpperCase(),
+        address,
+        city,
+        state,
+        pincode,
+        email,
+        phone,
+        logoUrl,
+        createdBy: req.user._id
+      }
+    ], { session });
+
+    const updatedUser = await User.findByIdAndUpdate(
+      req.user._id,
+      {
+        companyId: company._id,
+        companyCreated: true,
+        branchCreated: false,
+        financialYearCreated: false,
+        branchId: null,
+        financialYearId: null
+      },
+      { new: true, session }
+    );
+
+    await session.commitTransaction();
+
+    return res.status(201).json({
+      success: true,
+      data: {
+        user: shapeOnboardingUser(updatedUser),
+        nextStep: determineNextStep(updatedUser)
+      }
     });
-
-    // Update creator's active company association
-  req.user.companyId = company._id;
-req.user.companyCreated = true;
-req.user.branchCreated = false;
-req.user.financialYearCreated = false;
-
-await req.user.save();
-
-const updatedUser = await User.findById(req.user._id);
-
-console.log({
-  companyId: updatedUser.companyId,
-  companyCreated: updatedUser.companyCreated
-});
   } catch (error) {
+    await session.abortTransaction();
     next(error);
+  } finally {
+    session.endSession();
   }
 };
 
