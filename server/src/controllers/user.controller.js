@@ -68,39 +68,58 @@ const inviteUser = async (req, res, next) => {
 
 const listUsers = async (req, res, next) => {
   try {
-    const { companyId, search, includeInactive } = req.query;
+    const { search, includeInactive } = req.query;
     const page = Math.max(1, parseInt(req.query.page) || 1);
     const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 20));
+
+    // Get companyId from logged-in user
+    const companyId = req.user?.companyId;
 
     if (!companyId) {
       return res.status(400).json({
         success: false,
-        message: 'companyId query parameter is required',
-        errorCode: 'COMPANY_ID_REQUIRED'
+        message: "Company ID not found for logged in user",
+        errorCode: "COMPANY_ID_REQUIRED"
       });
     }
 
     // Base query: users who have a companyAccess entry for this company
-    const matchActive = includeInactive === 'true'
-      ? { 'companyAccess.companyId': companyId }
-      : { 'companyAccess.companyId': companyId, 'companyAccess.isActive': true };
+    const matchActive =
+      includeInactive === "true"
+        ? { "companyAccess.companyId": companyId }
+        : {
+            "companyAccess.companyId": companyId,
+            "companyAccess.isActive": true
+          };
 
     // Optional name/email search
     let searchFilter = {};
+
     if (search) {
-      const regex = new RegExp(search, 'i');
-      searchFilter = { $or: [{ name: regex }, { email: regex }] };
+      const regex = new RegExp(search, "i");
+      searchFilter = {
+        $or: [
+          { name: regex },
+          { email: regex }
+        ]
+      };
     }
 
-    const filter = { ...matchActive, ...searchFilter };
+    const filter = {
+      ...matchActive,
+      ...searchFilter
+    };
 
     const total = await User.countDocuments(filter);
+
     const users = await User.find(filter)
       .skip((page - 1) * limit)
       .limit(limit)
       .lean();
 
-    const data = users.map((u) => userService.toCompanyUserView(u, companyId));
+    const data = users.map((user) =>
+      userService.toCompanyUserView(user, companyId)
+    );
 
     return res.status(200).json({
       success: true,
