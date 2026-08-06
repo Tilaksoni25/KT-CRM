@@ -92,6 +92,12 @@ const checkCompanyAccess = async (req, res, next) => {
         if (!invoice) return res.status(404).json({ success: false, message: 'Invoice not found', errorCode: 'INVOICE_NOT_FOUND' });
         companyId = invoice.companyId;
         req.invoice = invoice;
+      } else if (baseUrl.includes('payment')) {
+        const Payment = require('../models/Payment');
+        const payment = await Payment.findById(req.params.id);
+        if (!payment) return res.status(404).json({ success: false, message: 'Payment not found', errorCode: 'PAYMENT_NOT_FOUND' });
+        companyId = payment.companyId;
+        req.payment = payment;
       }
     } else {
       companyId = req.body.companyId || req.query.companyId;

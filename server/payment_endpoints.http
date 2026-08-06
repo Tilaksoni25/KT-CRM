@@ -1,0 +1,37 @@
+### Kevalon ERP — Module 9: Customer Payments
+@baseUrl = http://localhost:5000/api/payment
+@accessToken = REPLACE_WITH_ACCESS_TOKEN
+@companyId = REPLACE_WITH_COMPANY_ID
+@financialYearId = REPLACE_WITH_FINANCIAL_YEAR_ID
+@customerId = REPLACE_WITH_CUSTOMER_ID
+@bankAccountId = REPLACE_WITH_BANK_ACCOUNT_ID
+@invoiceId = REPLACE_WITH_INVOICE_ID
+@paymentId = REPLACE_WITH_PAYMENT_ID
+
+### Receive a customer payment (strict allocation: allocations total must equal totalAmount)
+POST {{baseUrl}}/receive
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "companyId": "{{companyId}}",
+  "financialYearId": "{{financialYearId}}",
+  "customerId": "{{customerId}}",
+  "paymentDate": "2026-04-15",
+  "mode": "BANK_TRANSFER",
+  "bankAccountId": "{{bankAccountId}}",
+  "reference": "UTR-20260415-001",
+  "totalAmount": 1000,
+  "allocations": [
+    { "invoiceId": "{{invoiceId}}", "allocatedAmount": 1000 }
+  ],
+  "notes": "Payment received against invoice"
+}
+
+### List payments for a company
+GET {{baseUrl}}?companyId={{companyId}}&page=1&limit=20
+Authorization: Bearer {{accessToken}}
+
+### Get one payment
+GET {{baseUrl}}/{{paymentId}}
+Authorization: Bearer {{accessToken}}

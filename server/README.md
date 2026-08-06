@@ -475,6 +475,27 @@ Module 8 exposes authenticated invoice APIs under `/api/invoice`. It creates com
 - **Modules 13 Ledger and 14 Reports:** consume posted invoice journal entries.
 - **PDF service:** the invoice PDF endpoint is currently a safe placeholder response.
 
+## Module 9: Payments (Customer Receipts) API
+
+Module 9 records authenticated customer receipts under `/api/payment`. Use [payment_endpoints.http](payment_endpoints.http) for ready-to-run requests.
+
+| Method | Path | Purpose |
+|---|---|---|
+| POST | `/api/payment/receive` | Record a customer receipt and allocate it to invoices |
+| GET | `/api/payment?companyId=` | List company payments with optional filters and pagination |
+| GET | `/api/payment/:id` | Get a single payment's complete detail |
+
+Payments use **strict allocation**: at least one allocation is required and the allocation total must exactly equal `totalAmount`; advance/unallocated receipts are not accepted. Financial year, customer, invoice, and bank-account ownership are validated against the company. Allocations update `Invoice.balanceDue`, invoice payment status, and `appliedPayments`; an allocation cannot exceed an invoice's outstanding balance.
+
+For BANK_TRANSFER, CHEQUE, and UPI, an active company `bankAccountId` is required. When a bank account is supplied, a Module 12 journal entry is posted: Dr bank/cash account and Cr customer AR. CASH receipts without a selected account persist with `journalEntryId: null` until a default cash-account setting exists.
+
+### Integration TODOs
+
+- **Module 4 Bank & Cash Accounts:** configure a default cash account to post CASH receipts without `bankAccountId`.
+- **Module 8 Invoices:** allocations are now wired to `balanceDue`, `status`, and `appliedPayments`; invoice cancellation/edit guards already respect applied payments.
+- **Module 12 Journal Entry:** bank-account-backed receipts create balanced entries; reversal is intentionally deferred to a future audited payment-reversal endpoint.
+- **Modules 13/14:** consume the Module 12 receipt journal entries for ledger and reporting.
+
 ## Module 20: Notification, Reminder & Alert Engine
 
 Module 20 provides persistent notification logs, reminder configurations, scheduled-reminder records, and operational alerts. Its endpoints are under `/api` and all require a bearer token. Notifications are limited to their owning user. Company reminders and alerts use the Module 23 `NotificationConfig` permission: `view` lists reminders/alerts, while `manage` creates reminder rules and acknowledges alerts.

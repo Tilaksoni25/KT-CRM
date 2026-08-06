@@ -20,6 +20,7 @@ const journalEntryRoutes = require('./routes/journalEntry.routes');
 const ledgerRoutes = require('./routes/ledger.routes');
 const notificationRoutes = require('./routes/notification.routes');
 const invoiceRoutes = require('./routes/invoice.routes');
+const paymentRoutes = require('./routes/payment.routes');
 const errorHandler = require('./middleware/errorHandler');
 
 const logger = pino({
@@ -79,6 +80,7 @@ app.use('/api/reports', reportsRoutes);
 app.use('/api/journal-entry', journalEntryRoutes);
 app.use('/api/ledger', ledgerRoutes);
 app.use('/api/invoice', invoiceRoutes);
+app.use('/api/payment', paymentRoutes);
 app.use('/api', notificationRoutes);
 
 // Catch-all route for unknown resources
