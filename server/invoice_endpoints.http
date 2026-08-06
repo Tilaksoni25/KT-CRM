@@ -1,0 +1,26 @@
+@baseUrl = http://localhost:3000/api/invoice
+@token = REPLACE_WITH_ACCESS_TOKEN
+@companyId = REPLACE_WITH_COMPANY_ID
+@financialYearId = REPLACE_WITH_FINANCIAL_YEAR_ID
+@customerId = REPLACE_WITH_CUSTOMER_ID
+@invoiceId = REPLACE_WITH_INVOICE_ID
+
+### Create invoice
+POST {{baseUrl}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{"companyId":"{{companyId}}","financialYearId":"{{financialYearId}}","customerId":"{{customerId}}","invoiceDate":"2026-08-06","lineItems":[{"description":"Consulting service","quantity":1,"rate":1000,"discount":0,"taxableAmount":1000,"taxAmount":180,"totalAmount":1180}],"subTotal":1000,"discountTotal":0,"taxTotal":180,"grandTotal":1180}
+
+### List / detail / update / cancel / PDF
+GET {{baseUrl}}?companyId={{companyId}}
+Authorization: Bearer {{token}}
+
+GET {{baseUrl}}/{{invoiceId}}
+Authorization: Bearer {{token}}
+
+GET {{baseUrl}}/{{invoiceId}}/pdf
+Authorization: Bearer {{token}}
+
+DELETE {{baseUrl}}/{{invoiceId}}
+Authorization: Bearer {{token}}

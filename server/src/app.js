@@ -19,6 +19,7 @@ const reportsRoutes = require('./routes/reports.routes');
 const journalEntryRoutes = require('./routes/journalEntry.routes');
 const ledgerRoutes = require('./routes/ledger.routes');
 const notificationRoutes = require('./routes/notification.routes');
+const invoiceRoutes = require('./routes/invoice.routes');
 const errorHandler = require('./middleware/errorHandler');
 
 const logger = pino({
@@ -77,6 +78,7 @@ app.use('/api/ca-panel', caPanelRoutes);
 app.use('/api/reports', reportsRoutes);
 app.use('/api/journal-entry', journalEntryRoutes);
 app.use('/api/ledger', ledgerRoutes);
+app.use('/api/invoice', invoiceRoutes);
 app.use('/api', notificationRoutes);
 
 // Catch-all route for unknown resources

@@ -463,6 +463,18 @@ Both endpoints validate company ownership, account ownership, optional financial
 
 ---
 
+## Module 8: Sales Invoice API
+
+Module 8 exposes authenticated invoice APIs under `/api/invoice`. It creates company-scoped AR invoices with backend-generated, financial-year-specific invoice numbers; invoice totals are validated before persistence. Cancellation is status-based, not a hard delete. See [invoice_endpoints.http](invoice_endpoints.http) for all six requests.
+
+### Integration TODOs
+
+- **Module 12 Journal Entry:** post Dr customer / Cr revenue and GST on creation, and reverse that entry on cancellation.
+- **Module 9 Payment:** populate `appliedPayments`, update `balanceDue`, and prevent edits/cancellation after a payment.
+- **Module 25 GST & Tax Master:** tax-rate ownership is validated now; tax-account posting mapping is pending.
+- **Modules 13 Ledger and 14 Reports:** consume posted invoice journal entries.
+- **PDF service:** the invoice PDF endpoint is currently a safe placeholder response.
+
 ## Module 20: Notification, Reminder & Alert Engine
 
 Module 20 provides persistent notification logs, reminder configurations, scheduled-reminder records, and operational alerts. Its endpoints are under `/api` and all require a bearer token. Notifications are limited to their owning user. Company reminders and alerts use the Module 23 `NotificationConfig` permission: `view` lists reminders/alerts, while `manage` creates reminder rules and acknowledges alerts.

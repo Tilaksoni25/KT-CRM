@@ -86,6 +86,12 @@ const checkCompanyAccess = async (req, res, next) => {
         }
         companyId = role.companyId;
         req.role = role; // cache role document
+      } else if (baseUrl.includes('invoice')) {
+        const Invoice = require('../models/Invoice');
+        const invoice = await Invoice.findById(req.params.id);
+        if (!invoice) return res.status(404).json({ success: false, message: 'Invoice not found', errorCode: 'INVOICE_NOT_FOUND' });
+        companyId = invoice.companyId;
+        req.invoice = invoice;
       }
     } else {
       companyId = req.body.companyId || req.query.companyId;
