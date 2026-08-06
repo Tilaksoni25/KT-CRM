@@ -129,6 +129,32 @@ userSchema.pre('save', function(next) {
   next();
 });
 
+// Keep `companyCreated` in-sync for update queries that bypass `save()` (e.g. findByIdAndUpdate).
+function syncCompanyCreatedInUpdate(next) {
+  const update = this.getUpdate && this.getUpdate();
+  if (!update) return next();
+
+  // Support both top-level updates and $set updates
+  const target = update.$set ? update.$set : update;
+
+  if (Object.prototype.hasOwnProperty.call(target, 'companyId')) {
+    const val = target.companyId;
+    const bool = !!val;
+    if (update.$set) {
+      update.$set.companyCreated = bool;
+    } else {
+      update.companyCreated = bool;
+    }
+    this.setUpdate(update);
+  }
+
+  next();
+}
+
+userSchema.pre('findOneAndUpdate', syncCompanyCreatedInUpdate);
+userSchema.pre('updateOne', syncCompanyCreatedInUpdate);
+userSchema.pre('updateMany', syncCompanyCreatedInUpdate);
+
 // Pre-save hook or helper functions can also be defined, but let's keep logic in controllers/services for clarity.
 
 const User = mongoose.model('User', userSchema);
