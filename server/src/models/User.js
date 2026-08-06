@@ -117,6 +117,18 @@ userSchema.virtual('isLocked').get(function() {
   return !!(this.lockUntil && this.lockUntil > Date.now());
 });
 
+// Ensure `companyCreated` flag matches presence of `companyId` on every save.
+// This keeps the flag in-sync even if `companyId` is set/cleared elsewhere.
+userSchema.pre('save', function(next) {
+  try {
+    this.companyCreated = !!this.companyId;
+  } catch (err) {
+    // In the unlikely event of an error, allow save to continue and surface the error.
+    return next(err);
+  }
+  next();
+});
+
 // Pre-save hook or helper functions can also be defined, but let's keep logic in controllers/services for clarity.
 
 const User = mongoose.model('User', userSchema);
