@@ -11,7 +11,12 @@ const createCompany = async (req, res, next) => {
   session.startTransaction();
 
   try {
-    if (req.user.companyCreated) {
+    // Use authoritative DB check instead of relying on potentially stale
+    // `req.user.companyCreated` flag. This avoids false positives when the
+    // company document was removed directly from the DB or flags are out-of-sync.
+    const existingCompany = await Company.findOne({ createdBy: req.user._id }).session(session);
+    if (existingCompany) {
+      await session.abortTransaction();
       return res.status(400).json({
         success: false,
         message: 'Company has already been created for this user',
