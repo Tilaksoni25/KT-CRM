@@ -9,7 +9,7 @@ const env = require('../config/env');
  */
 const generateAccessToken = (payload) => {
   return jwt.sign(payload, env.JWT_ACCESS_SECRET, {
-    expiresIn: '15m'
+    expiresIn: '7d'
   });
 };
 

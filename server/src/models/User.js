@@ -121,9 +121,11 @@ userSchema.virtual('isLocked').get(function() {
 // This keeps the flag in-sync even if `companyId` is set/cleared elsewhere.
 userSchema.pre('save', function(next) {
   try {
-    this.companyCreated = !!this.companyId;
+    const flag = !!this.companyId;
+    this.companyCreated = flag;
+    this.branchCreated = flag;
+    this.financialYearCreated = flag;
   } catch (err) {
-    // In the unlikely event of an error, allow save to continue and surface the error.
     return next(err);
   }
   next();
@@ -142,8 +144,12 @@ function syncCompanyCreatedInUpdate(next) {
     const bool = !!val;
     if (update.$set) {
       update.$set.companyCreated = bool;
+      update.$set.branchCreated = bool;
+      update.$set.financialYearCreated = bool;
     } else {
       update.companyCreated = bool;
+      update.branchCreated = bool;
+      update.financialYearCreated = bool;
     }
     this.setUpdate(update);
   }
