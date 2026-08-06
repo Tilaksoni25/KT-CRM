@@ -46,7 +46,12 @@ const createFinancialYear = async (req, res, next) => {
     // Store setup progress for the owner; auth login recomputes it as a
     // fallback for companies that existed before this field was introduced.
     const company = await Company.findById(companyId).select('createdBy');
-    if (company) await User.findByIdAndUpdate(company.createdBy, { financialYearCreated: true });
+    if (company) {
+      await User.findByIdAndUpdate(company.createdBy, {
+        financialYearCreated: true,
+        financialYearId: fy._id
+      });
+    }
 
     return res.status(201).json({
       success: true,
