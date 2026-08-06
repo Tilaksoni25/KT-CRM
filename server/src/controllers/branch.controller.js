@@ -40,7 +40,12 @@ const createBranch = async (req, res, next) => {
     // Keep onboarding state in sync for the company owner. Login also derives
     // this from Branch data, so existing records remain compatible.
     const company = await Company.findById(companyId).select('createdBy');
-    if (company) await User.findByIdAndUpdate(company.createdBy, { branchCreated: true });
+    if (company) {
+      await User.findByIdAndUpdate(company.createdBy, {
+        branchCreated: true,
+        branchId: branch._id
+      });
+    }
 
     return res.status(201).json({
       success: true,

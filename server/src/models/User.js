@@ -92,6 +92,7 @@ const userSchema = new mongoose.Schema({
   emailVerificationTokenHash: { type: String, select: false },
   emailVerificationExpires: { type: Date, select: false },
   companyId: { type: mongoose.Schema.Types.ObjectId, ref: 'Company', default: null },
+  branchId: { type: mongoose.Schema.Types.ObjectId, ref: 'Branch', default: null },
 
   // Onboarding progress for the user's active company setup. These flags are also
   // calculated from persisted company data during login so existing users work

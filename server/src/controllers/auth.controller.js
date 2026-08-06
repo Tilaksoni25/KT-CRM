@@ -28,7 +28,7 @@ const maskEmail = (email) => {
  */
 const getOnboardingStatus = async (user) => {
   const activeAccess = (user.companyAccess || []).find((access) => access.isActive);
-  const companyId = user.companyId || activeAccess?.companyId || null;
+  const companyId = companyId || activeAccess?.companyId || null;
   if (!companyId) {
     return { companyCreated: false, branchCreated: false, financialYearCreated: false, companyId: null, redirectTo: 'COMPANY_REGISTRATION' };
   }
