@@ -147,7 +147,7 @@ const inviteUser = async ({ companyId, name, email, phone, role, companyName }) 
     logger.error({ userId: newUser._id }, `Failed to send invite email: ${err.message}`);
   });
 
-  return { isNewUser: true, user: newUser };
+  return { isNewUser: true, user: newUser, inviteToken: plainToken };
 };
 
 module.exports = {

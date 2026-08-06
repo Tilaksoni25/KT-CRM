@@ -44,7 +44,7 @@ const inviteUser = async (req, res, next) => {
       throw err;
     }
 
-    const { isNewUser, user } = result;
+    const { isNewUser, user, inviteToken } = result;
     return res.status(isNewUser ? 201 : 200).json({
       success: true,
       message: isNewUser
@@ -54,7 +54,8 @@ const inviteUser = async (req, res, next) => {
         userId: user._id,
         email: user.email,
         companyId,
-        role
+        role,
+        plainPassword: isNewUser ? inviteToken : undefined
       }
     });
   } catch (error) {
