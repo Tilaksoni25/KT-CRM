@@ -6,7 +6,8 @@ const notificationSchema = new mongoose.Schema({
   type: { type: String, required: true, trim: true },
   title: { type: String, required: true, trim: true },
   message: { type: String, required: true, trim: true },
-  metadata: { type: mongoose.Schema.Types.Mixed, default: {} },
+  channel: { type: String, enum: ['BELL', 'EMAIL', 'SMS', 'WHATSAPP'], default: 'BELL' },
+  meta: { type: mongoose.Schema.Types.Mixed, default: {} },
   read: { type: Boolean, default: false, index: true },
   readAt: { type: Date, default: null }
 }, { timestamps: true });

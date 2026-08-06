@@ -1,5 +1,5 @@
 ### Kevalon ERP — Module 20: Notifications, Reminders & Alerts
-@baseUrl = http://localhost:5000/api
+@baseUrl = http://localhost:3000/api
 @token = REPLACE_WITH_ACCESS_TOKEN
 @userId = REPLACE_WITH_USER_ID
 @companyId = REPLACE_WITH_COMPANY_ID
@@ -21,10 +21,11 @@ Content-Type: application/json
 
 {
   "companyId": "{{companyId}}",
-  "type": "GST",
+  "type": "GST_DUE",
   "daysBefore": 7,
   "enabled": true,
-  "channels": ["in-app", "email"]
+  "channels": ["BELL", "EMAIL"],
+  "config": { "period": "monthly" }
 }
 
 ### Scheduled reminders

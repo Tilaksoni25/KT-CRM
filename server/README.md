@@ -465,7 +465,7 @@ Both endpoints validate company ownership, account ownership, optional financial
 
 ## Module 20: Notification, Reminder & Alert Engine
 
-Module 20 provides persistent in-app notifications, reminder configurations, scheduled-reminder records, and operational alerts. Its endpoints are under `/api` and all require a bearer token.
+Module 20 provides persistent notification logs, reminder configurations, scheduled-reminder records, and operational alerts. Its endpoints are under `/api` and all require a bearer token. Notifications are limited to their owning user. Company reminders and alerts use the Module 23 `NotificationConfig` permission: `view` lists reminders/alerts, while `manage` creates reminder rules and acknowledges alerts.
 
 | Method | Path | Purpose |
 |---|---|---|
@@ -481,6 +481,7 @@ Reminder rules and alerts are stored in dedicated MongoDB collections. In the ab
 ### Future integration points
 
 - **Module 8 Sales Invoice / payments:** due-date notifications and overdue-invoice alerts.
+- **Module 4 Bank & Cash:** negative-cash alerts.
 - **Module 10 Purchase:** supplier-payment due reminders.
 - **Module 18 Inventory & Warehouse:** low-stock alerts.
 - **Module 19 Fixed Assets:** AMC and renewal reminders.

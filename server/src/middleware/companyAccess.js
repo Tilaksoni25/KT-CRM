@@ -110,7 +110,11 @@ const checkCompanyAccess = async (req, res, next) => {
     }
 
     const isOwner = company.createdBy.toString() === req.user._id.toString();
-    const isMember = req.user.companyId && req.user.companyId.toString() === company.id;
+    const isLegacyMember = req.user.companyId && req.user.companyId.toString() === company.id;
+    const isCompanyAccessMember = (req.user.companyAccess || []).some(
+      (access) => access.isActive && access.companyId.toString() === company.id
+    );
+    const isMember = isLegacyMember || isCompanyAccessMember;
 
     if (!isOwner && !isMember) {
       return res.status(403).json({

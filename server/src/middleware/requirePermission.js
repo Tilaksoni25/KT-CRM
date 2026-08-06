@@ -72,7 +72,7 @@ const requirePermission = (moduleName, requiredLevel) => {
       }
 
       // Owners are treated as Super Admin — bypass further checks
-      if (isOwner && !accessEntry) {
+      if (isOwner) {
         return next();
       }
 
