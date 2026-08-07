@@ -262,7 +262,18 @@ const forgotPassword = async (req, res, next) => {
       const text = `To reset your Kevalon ERP password, please click the following link (valid for 15 minutes):\n\n${resetLink}`;
       const html = `<p>You requested a password reset for Kevalon ERP.</p><p>Please click the link below to set a new password (valid for 15 minutes):</p><p><a href="${resetLink}">${resetLink}</a></p>`;
 
-      await sendEmail({ to: user.email, subject, text, html });
+      await sendEmail({
+        to: user.email,
+        subject,
+        text,
+        html,
+        templateParams: {
+          reset_link: resetLink,
+          link: resetLink,
+          company_name: 'Kevalon ERP',
+          website_link: env.CLIENT_URL
+        }
+      });
       logger.info({ userId: user._id }, `Password reset token generated and sent`);
     } else {
       logger.info(`Password reset requested for non-existent email: ${email}`);

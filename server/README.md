@@ -57,6 +57,7 @@ Fill in the environment variables:
 - `JWT_ACCESS_SECRET` / `JWT_REFRESH_SECRET`: Secure strings for token signing (min 8 chars)
 - `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM`: SMTP configuration for OTPs, password-reset links, and **email-verification links**.
   *If SMTP credentials are left blank, all emails (OTPs, reset links, verification links) are printed directly to the console server logs for local testing.*
+- `EMAILJS_SERVICE_ID`, `EMAILJS_TEMPLATE_ID`, `EMAILJS_PUBLIC_KEY`, `EMAILJS_PRIVATE_KEY`: EmailJS configuration. When the first three values are configured, EmailJS is used in preference to SMTP. Keep the private key only in `server/.env`.
 - `ALLOWED_ORIGINS`: Comma-separated list of origins allowed by CORS
 - `CLIENT_URL`: Base URL for building verification and reset links (e.g. `https://app.kevalon.com`)
 

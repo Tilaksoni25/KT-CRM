@@ -18,6 +18,10 @@ const envSchema = z.object({
   SMTP_USER: z.string().optional().or(z.literal('')),
   SMTP_PASS: z.string().optional().or(z.literal('')),
   SMTP_FROM: z.string().default('Kevalon ERP <tilak.kevalon@gmail.com>'),
+  EMAILJS_SERVICE_ID: z.string().optional().or(z.literal('')),
+  EMAILJS_TEMPLATE_ID: z.string().optional().or(z.literal('')),
+  EMAILJS_PUBLIC_KEY: z.string().optional().or(z.literal('')),
+  EMAILJS_PRIVATE_KEY: z.string().optional().or(z.literal('')),
   ALLOWED_ORIGINS: z.string().default('http://localhost:3000'),
   CLIENT_URL: z.string().url().default('http://localhost:3000')
 });

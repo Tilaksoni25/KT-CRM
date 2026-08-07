@@ -11,9 +11,12 @@ const logger = pino({
 });
 
 let transporter = null;
+const isEmailJsConfigured = Boolean(
+  env.EMAILJS_SERVICE_ID && env.EMAILJS_TEMPLATE_ID && env.EMAILJS_PUBLIC_KEY
+);
 
 // Initialize Nodemailer transporter if SMTP config is present
-if (env.SMTP_HOST && env.SMTP_USER) {
+if (!isEmailJsConfigured && env.SMTP_HOST && env.SMTP_USER) {
   transporter = nodemailer.createTransport({
     host: env.SMTP_HOST,
     port: env.SMTP_PORT,
@@ -26,11 +29,56 @@ if (env.SMTP_HOST && env.SMTP_USER) {
 }
 
 /**
- * Send an email using nodemailer or log it if SMTP is not configured
- * @param {object} options - { to, subject, text, html }
+ * Send an email through EmailJS's REST API. The private key stays on the
+ * server; it must never be exposed to browser code.
+ */
+const sendWithEmailJs = async ({ to, subject, text, html, templateParams = {} }) => {
+  const response = await fetch('https://api.emailjs.com/api/v1.0/email/send', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      service_id: env.EMAILJS_SERVICE_ID,
+      template_id: env.EMAILJS_TEMPLATE_ID,
+      user_id: env.EMAILJS_PUBLIC_KEY,
+      ...(env.EMAILJS_PRIVATE_KEY ? { accessToken: env.EMAILJS_PRIVATE_KEY } : {}),
+      template_params: {
+        to_email: to,
+        email: to,
+        subject,
+        message: text,
+        html_content: html,
+        ...templateParams
+      }
+    })
+  });
+
+  const responseText = await response.text();
+  if (!response.ok) {
+    throw new Error(`EmailJS request failed (${response.status}): ${responseText}`);
+  }
+
+  logger.info(`Email sent successfully through EmailJS to ${to}`);
+  return { messageId: responseText || 'emailjs-sent', provider: 'emailjs' };
+};
+
+/**
+ * Send an email using EmailJS, Nodemailer, or log it if neither is configured.
+ * @param {object} options - { to, subject, text, html, templateParams }
  * @returns {Promise<object>}
  */
-const sendEmail = async ({ to, subject, text, html }) => {
+const sendEmail = async ({ to, subject, text, html, templateParams }) => {
+  if (isEmailJsConfigured) {
+    try {
+      return await sendWithEmailJs({ to, subject, text, html, templateParams });
+    } catch (error) {
+      logger.error(`EmailJS failed to send email to ${to}: ${error.message}`);
+      if (env.NODE_ENV === 'development' || env.NODE_ENV === 'test') {
+        return { messageId: 'emailjs-fallback-id', preview: true, error: error.message };
+      }
+      throw error;
+    }
+  }
+
   if (!transporter) {
     logger.info(`📧 [MOCK EMAIL] --- Sending Simulated Email ---`);
     logger.info(`📧 [MOCK EMAIL] To: ${to}`);
