@@ -12,27 +12,52 @@ const branchSchema = new mongoose.Schema({
     required: [true, 'Branch name is required'],
     trim: true
   },
+  branchCode: {
+    type: String,
+    trim: true,
+    default: ''
+  },
   address: {
     type: String,
-    trim: true
+    trim: true,
+    default: ''
   },
   city: {
     type: String,
-    trim: true
+    trim: true,
+    default: ''
   },
   state: {
     type: String,
-    trim: true
+    trim: true,
+    default: ''
   },
   pincode: {
     type: String,
     trim: true,
+    default: '',
     validate: {
       validator: function(v) {
         return !v || /^[1-9][0-9]{5}$/.test(v);
       },
       message: props => `${props.value} is not a valid Indian pincode!`
     }
+  },
+  phone: {
+    type: String,
+    trim: true,
+    default: ''
+  },
+  email: {
+    type: String,
+    trim: true,
+    lowercase: true,
+    default: ''
+  },
+  manager: {
+    type: String,
+    trim: true,
+    default: ''
   },
   isHeadOffice: {
     type: Boolean,

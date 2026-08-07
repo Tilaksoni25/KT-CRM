@@ -8,15 +8,38 @@ const { shapeOnboardingUser, determineNextStep } = require('../utils/onboarding'
  */
 const createCompany = async (req, res, next) => {
   const session = await Company.startSession();
-  session.startTransaction();
+  let transactionStarted = false;
 
   try {
+    try {
+      await session.startTransaction();
+      // Probe a simple query using the started transaction. Some MongoDB
+      // setups (like standalone servers or mongodb-memory-server default)
+      // report support only when a command is first issued in the transaction.
+      await Company.findOne().session(session);
+      transactionStarted = true;
+    } catch (startErr) {
+      if (!startErr.message.includes('Transaction numbers are only allowed on a replica set member or mongos')) {
+        throw startErr;
+      }
+      transactionStarted = false;
+      try {
+        await session.abortTransaction();
+      } catch (ignore) {
+        // Best-effort cleanup when transaction support is unavailable.
+      }
+    }
+
+    const sessionOpts = transactionStarted ? { session } : {};
+
     // Use authoritative DB check instead of relying on potentially stale
     // `req.user.companyCreated` flag. This avoids false positives when the
     // company document was removed directly from the DB or flags are out-of-sync.
-    const existingCompany = await Company.findOne({ createdBy: req.user._id }).session(session);
+    const existingCompany = transactionStarted
+      ? await Company.findOne({ createdBy: req.user._id }).session(session)
+      : await Company.findOne({ createdBy: req.user._id });
     if (existingCompany) {
-      await session.abortTransaction();
+      if (transactionStarted) await session.abortTransaction();
       return res.status(400).json({
         success: false,
         message: 'Company has already been created for this user',
@@ -27,9 +50,11 @@ const createCompany = async (req, res, next) => {
     const { name, gstin, pan, address, city, state, pincode, email, phone, logoUrl } = req.body;
 
     // Check for existing GSTIN or PAN conflicts
-    const existingGstin = await Company.findOne({ gstin: gstin.toUpperCase() }).session(session);
+    const existingGstin = transactionStarted
+      ? await Company.findOne({ gstin: gstin.toUpperCase() }).session(session)
+      : await Company.findOne({ gstin: gstin.toUpperCase() });
     if (existingGstin) {
-      await session.abortTransaction();
+      if (transactionStarted) await session.abortTransaction();
       return res.status(409).json({
         success: false,
         message: 'A company with this GSTIN is already registered',
@@ -37,9 +62,11 @@ const createCompany = async (req, res, next) => {
       });
     }
 
-    const existingPan = await Company.findOne({ pan: pan.toUpperCase() }).session(session);
+    const existingPan = transactionStarted
+      ? await Company.findOne({ pan: pan.toUpperCase() }).session(session)
+      : await Company.findOne({ pan: pan.toUpperCase() });
     if (existingPan) {
-      await session.abortTransaction();
+      if (transactionStarted) await session.abortTransaction();
       return res.status(409).json({
         success: false,
         message: 'A company with this PAN is already registered',
@@ -61,7 +88,7 @@ const createCompany = async (req, res, next) => {
         logoUrl,
         createdBy: req.user._id
       }
-    ], { session });
+    ], sessionOpts);
 
     const updatedUser = await User.findByIdAndUpdate(
       req.user._id,
@@ -73,23 +100,32 @@ const createCompany = async (req, res, next) => {
         branchId: null,
         financialYearId: null
       },
-      { new: true, session }
+      { new: true, ...sessionOpts }
     );
 
-    await session.commitTransaction();
+    if (transactionStarted) {
+      await session.commitTransaction();
+    }
 
     return res.status(201).json({
       success: true,
       data: {
+        ...company.toObject(),
         user: shapeOnboardingUser(updatedUser),
         nextStep: determineNextStep(updatedUser)
       }
     });
   } catch (error) {
-    await session.abortTransaction();
+    if (transactionStarted) {
+      try {
+        await session.abortTransaction();
+      } catch (ignore) {
+        // Ignore abort errors when transaction support is unavailable.
+      }
+    }
     next(error);
   } finally {
-    session.endSession();
+    await session.endSession();
   }
 };
 

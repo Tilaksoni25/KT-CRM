@@ -8,11 +8,29 @@ const User = require('../models/User');
  */
 const createFinancialYear = async (req, res, next) => {
   const session = await FinancialYear.startSession();
-  session.startTransaction();
+  let transactionStarted = false;
 
   try {
+    try {
+      await session.startTransaction();
+      await FinancialYear.findOne().session(session);
+      transactionStarted = true;
+    } catch (startErr) {
+      if (!startErr.message.includes('Transaction numbers are only allowed on a replica set member or mongos')) {
+        throw startErr;
+      }
+      transactionStarted = false;
+      try {
+        await session.abortTransaction();
+      } catch (ignore) {
+        // Best-effort cleanup when transaction support is unavailable.
+      }
+    }
+
+    const sessionOpts = transactionStarted ? { session } : {};
+
     if (!req.user.companyCreated) {
-      await session.abortTransaction();
+      if (transactionStarted) await session.abortTransaction();
       return res.status(403).json({
         success: false,
         message: 'Complete company setup first.',
@@ -44,14 +62,20 @@ const createFinancialYear = async (req, res, next) => {
     }
 
     // Business Rule Check: Check for overlapping Financial Years for the same company
-    const overlap = await FinancialYear.findOne({
-      companyId,
-      startDate: { $lte: end },
-      endDate: { $gte: start }
-    }).session(session);
+    const overlap = transactionStarted
+      ? await FinancialYear.findOne({
+          companyId,
+          startDate: { $lte: end },
+          endDate: { $gte: start }
+        }).session(session)
+      : await FinancialYear.findOne({
+          companyId,
+          startDate: { $lte: end },
+          endDate: { $gte: start }
+        });
 
     if (overlap) {
-      await session.abortTransaction();
+      if (transactionStarted) await session.abortTransaction();
       return res.status(409).json({
         success: false,
         message: 'This date range overlaps with an existing Financial Year for this company.',
@@ -66,29 +90,37 @@ const createFinancialYear = async (req, res, next) => {
         endDate: end,
         yearLabel
       }
-    ], { session });
+    ], sessionOpts);
 
     const updateFields = {
       financialYearCreated: true,
       financialYearId: fy._id
     };
 
-    await User.findByIdAndUpdate(req.user._id, updateFields, { session });
+    await User.findByIdAndUpdate(req.user._id, updateFields, { new: true, ...sessionOpts });
 
-    await session.commitTransaction();
+    if (transactionStarted) {
+      await session.commitTransaction();
+    }
 
     return res.status(201).json({
       success: true,
       data: {
-        financialYearId: fy._id,
+        ...fy.toObject(),
         nextStep: 'DASHBOARD'
       }
     });
   } catch (error) {
-    await session.abortTransaction();
+    if (transactionStarted) {
+      try {
+        await session.abortTransaction();
+      } catch (ignore) {
+        // Ignore abort errors when transaction support is unavailable.
+      }
+    }
     next(error);
   } finally {
-    session.endSession();
+    await session.endSession();
   }
 };
 

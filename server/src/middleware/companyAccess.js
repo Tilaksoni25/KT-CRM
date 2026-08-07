@@ -100,7 +100,7 @@ const checkCompanyAccess = async (req, res, next) => {
         req.payment = payment;
       }
     } else {
-      companyId = req.body.companyId || req.query.companyId;
+      companyId = req.body.companyId || req.query.companyId || (req.user && req.user.companyId);
     }
 
     if (!companyId) {

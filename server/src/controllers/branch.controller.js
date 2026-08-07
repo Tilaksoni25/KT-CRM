@@ -18,7 +18,8 @@ const createBranch = async (req, res, next) => {
       });
     }
 
-    const { companyId, branchName, address, city, state, pincode, isHeadOffice, status } = req.body;
+    const { companyId: bodyCompanyId, branchName, branchCode, address, city, state, pincode, phone, email, manager, isHeadOffice, status } = req.body;
+    const companyId = bodyCompanyId || req.user.companyId;
 
     // Count existing branches for the company
     const count = await Branch.countDocuments({ companyId });
@@ -38,10 +39,14 @@ const createBranch = async (req, res, next) => {
     const branch = await Branch.create({
       companyId,
       branchName,
+      branchCode,
       address,
       city,
       state,
       pincode,
+      phone,
+      email,
+      manager,
       isHeadOffice: shouldBeHeadOffice,
       status
     });
@@ -56,7 +61,7 @@ const createBranch = async (req, res, next) => {
     return res.status(201).json({
       success: true,
       data: {
-        branchId: branch._id,
+        ...branch.toObject(),
         nextStep: 'CREATE_FINANCIAL_YEAR'
       }
     });
@@ -114,7 +119,7 @@ const updateBranch = async (req, res, next) => {
     }
 
     // Update other fields
-    const allowedFields = ['branchName', 'address', 'city', 'state', 'pincode', 'isHeadOffice', 'status'];
+    const allowedFields = ['branchName', 'branchCode', 'address', 'city', 'state', 'pincode', 'phone', 'email', 'manager', 'isHeadOffice', 'status'];
     allowedFields.forEach((field) => {
       if (updates[field] !== undefined) {
         branch[field] = updates[field];
