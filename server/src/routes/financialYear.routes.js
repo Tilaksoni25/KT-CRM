@@ -26,11 +26,14 @@ router.use(authenticate);
  *             type: object
  *             required:
  *               - companyId
+ *               - branchId
  *               - startDate
  *               - endDate
  *               - yearLabel
  *             properties:
  *               companyId:
+ *                 type: string
+ *               branchId:
  *                 type: string
  *               startDate:
  *                 type: string
@@ -65,13 +68,18 @@ router.post('/', validateRequest(createFYSchema), checkCompanyAccess, createFina
  * /api/financial-year:
  *   get:
  *     summary: List all financial years for a company
- *     description: Retrieves all financial years belonging to the specified company.
+ *     description: Retrieves all financial years belonging to the specified company. Supply branchId to list a single branch's financial years.
  *     security:
  *       - bearerAuth: []
  *     parameters:
  *       - in: query
  *         name: companyId
  *         required: true
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: branchId
+ *         required: false
  *         schema:
  *           type: string
  *     responses:

@@ -302,7 +302,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"companyId\": \"{{companyId}}\",\n  \"startDate\": \"2025-04-01\",\n  \"endDate\": \"2026-03-31\",\n  \"yearLabel\": \"2025-26\"\n}"
+              "raw": "{\n  \"companyId\": \"{{companyId}}\",\n  \"branchId\": \"{{branchId}}\",\n  \"startDate\": \"2025-04-01\",\n  \"endDate\": \"2026-03-31\",\n  \"yearLabel\": \"2025-26\"\n}"
             },
             "url": {
               "raw": "http://localhost:3000/api/financial-year",
@@ -335,7 +335,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "http://localhost:3000/api/financial-year?companyId={{companyId}}",
+              "raw": "http://localhost:3000/api/financial-year?companyId={{companyId}}&branchId={{branchId}}",
               "protocol": "http",
               "host": [
                 "localhost"
@@ -349,6 +349,10 @@
                 {
                   "key": "companyId",
                   "value": "{{companyId}}"
+                },
+                {
+                  "key": "branchId",
+                  "value": "{{branchId}}"
                 }
               ]
             }

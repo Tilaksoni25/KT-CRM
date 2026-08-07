@@ -155,8 +155,8 @@ Import [kevalon_module2.postman_collection.json](file:///c:/Users/LENOVO/Desktop
 ### Financial Year (`/api/financial-year`)
 | Method | Path | Auth | Purpose |
 |--------|------|------|---------|
-| POST | `/api/financial-year` | Yes | Create a new financial year (overlap check enforced) |
-| GET | `/api/financial-year?companyId=` | Yes | List all financial years for a company |
+| POST | `/api/financial-year` | Yes | Create a new financial year for a branch (overlap check enforced) |
+| GET | `/api/financial-year?companyId=&branchId=` | Yes | List financial years; `branchId` optionally filters one branch |
 | PUT | `/api/financial-year/:id/lock` | Yes | Lock a financial year to close it |
 
 ### Business Rules Enforced
@@ -164,7 +164,8 @@ Import [kevalon_module2.postman_collection.json](file:///c:/Users/LENOVO/Desktop
 - **PAN format:** `^[A-Z]{5}[0-9]{4}[A-Z]{1}$`
 - **Head Office:** Every company must have exactly one Head Office branch. First branch is auto-assigned. Status transfer enforced on update.
 - **Branch Delete Guard:** Cannot delete Head Office. Cannot delete branches with associated transactions (future-proof via dynamic model check).
-- **FY Overlap:** Overlapping date ranges for the same company return `409 Conflict`.
+- **FY Branch Link:** Every newly created financial year stores its `branchId`; the branch must belong to the supplied company.
+- **FY Overlap:** Overlapping date ranges for the same branch return `409 Conflict`.
 - **FY Lock:** Locked financial years cannot be re-locked. `isLocked`, `lockedAt`, and `lockedBy` are stamped on lock.
 - **Data Isolation:** All Module 2 endpoints enforce company-level access control — cross-company access returns `403 Forbidden`.
 

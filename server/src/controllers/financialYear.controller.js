@@ -1,5 +1,6 @@
 const FinancialYear = require('../models/FinancialYear');
 const Company = require('../models/Company');
+const Branch = require('../models/Branch');
 const User = require('../models/User');
 
 /**
@@ -47,7 +48,20 @@ const createFinancialYear = async (req, res, next) => {
       });
     }
 
-    const { companyId, startDate, endDate, yearLabel, isLocked, status } = req.body;
+    const { companyId, branchId, startDate, endDate, yearLabel, isLocked, status } = req.body;
+
+    // A branch cannot be associated with another company's financial year.
+    const branchQuery = Branch.findOne({ _id: branchId, companyId });
+    if (transactionStarted) branchQuery.session(session);
+    const branch = await branchQuery;
+    if (!branch) {
+      if (transactionStarted) await session.abortTransaction();
+      return res.status(400).json({
+        success: false,
+        message: 'Branch does not belong to the specified company',
+        errorCode: 'INVALID_BRANCH_COMPANY'
+      });
+    }
 
     const start = new Date(startDate);
     const end = new Date(endDate);
@@ -61,15 +75,17 @@ const createFinancialYear = async (req, res, next) => {
       });
     }
 
-    // Business Rule Check: Check for overlapping Financial Years for the same company
+    // Business Rule Check: Check overlap within the same branch.
     const overlap = transactionStarted
       ? await FinancialYear.findOne({
           companyId,
+          branchId,
           startDate: { $lte: end },
           endDate: { $gte: start }
         }).session(session)
       : await FinancialYear.findOne({
           companyId,
+          branchId,
           startDate: { $lte: end },
           endDate: { $gte: start }
         });
@@ -78,7 +94,7 @@ const createFinancialYear = async (req, res, next) => {
       if (transactionStarted) await session.abortTransaction();
       return res.status(409).json({
         success: false,
-        message: 'This date range overlaps with an existing Financial Year for this company.',
+        message: 'This date range overlaps with an existing Financial Year for this branch.',
         errorCode: 'FINANCIAL_YEAR_OVERLAP'
       });
     }
@@ -86,6 +102,7 @@ const createFinancialYear = async (req, res, next) => {
     const [fy] = await FinancialYear.create([
       {
         companyId,
+        branchId,
         startDate: start,
         endDate: end,
         yearLabel,
@@ -128,14 +145,27 @@ const createFinancialYear = async (req, res, next) => {
 };
 
 /**
- * GET /api/financial-year?companyId=
- * List all financial years for a company
+ * GET /api/financial-year?companyId=&branchId=
+ * List all financial years for a company, optionally for one branch
  */
 const listFinancialYears = async (req, res, next) => {
   try {
-    const { companyId } = req.query;
+    const { companyId, branchId } = req.query;
+    const filter = { companyId };
 
-    const financialYears = await FinancialYear.find({ companyId }).sort({ startDate: 1 });
+    if (branchId) {
+      const branch = await Branch.findOne({ _id: branchId, companyId });
+      if (!branch) {
+        return res.status(400).json({
+          success: false,
+          message: 'Branch does not belong to the specified company',
+          errorCode: 'INVALID_BRANCH_COMPANY'
+        });
+      }
+      filter.branchId = branchId;
+    }
+
+    const financialYears = await FinancialYear.find(filter).sort({ startDate: 1 });
 
     return res.status(200).json({
       success: true,

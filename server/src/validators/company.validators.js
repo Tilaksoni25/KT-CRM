@@ -64,6 +64,7 @@ const updateBranchSchema = z.object({
 
 const createFYSchema = z.object({
   companyId: z.string({ required_error: 'Company ID is required' }).min(1, 'Company ID cannot be empty'),
+  branchId: z.string({ required_error: 'Branch ID is required' }).min(1, 'Branch ID cannot be empty'),
   startDate: z.string({ required_error: 'Start date is required' }).datetime({ message: 'Invalid start date datetime string' }).or(z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Invalid start date format (YYYY-MM-DD)')),
   endDate: z.string({ required_error: 'End date is required' }).datetime({ message: 'Invalid end date datetime string' }).or(z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Invalid end date format (YYYY-MM-DD)')),
   yearLabel: z.string({ required_error: 'Year label is required' }).min(1, 'Year label cannot be empty'),

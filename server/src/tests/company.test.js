@@ -300,6 +300,7 @@ describe('Module 2: Company, Branch & Financial Year Integration Tests', () => {
         .set('Authorization', `Bearer ${tokenA}`)
         .send({
           companyId: companyAId,
+          branchId: branch1Id,
           startDate: '2025-04-01',
           endDate: '2026-03-31',
           yearLabel: '2025-26'
@@ -307,6 +308,7 @@ describe('Module 2: Company, Branch & Financial Year Integration Tests', () => {
 
       expect(res.statusCode).toBe(201);
       expect(res.body.data).toHaveProperty('_id');
+      expect(res.body.data.branchId).toBe(branch1Id);
       fyId = res.body.data._id;
     });
 
@@ -316,6 +318,7 @@ describe('Module 2: Company, Branch & Financial Year Integration Tests', () => {
         .set('Authorization', `Bearer ${tokenA}`)
         .send({
           companyId: companyAId,
+          branchId: branch1Id,
           startDate: '2025-10-01', // overlaps with existing FY
           endDate: '2026-09-30',
           yearLabel: '2025-26 Overlap'
@@ -329,7 +332,7 @@ describe('Module 2: Company, Branch & Financial Year Integration Tests', () => {
   describe('GET /api/financial-year (List Financial Years)', () => {
     it('should successfully list financial years for userA company', async () => {
       const res = await request(app)
-        .get(`/api/financial-year?companyId=${companyAId}`)
+        .get(`/api/financial-year?companyId=${companyAId}&branchId=${branch1Id}`)
         .set('Authorization', `Bearer ${tokenA}`);
 
       expect(res.statusCode).toBe(200);

@@ -7,6 +7,15 @@ const financialYearSchema = new mongoose.Schema({
     required: [true, 'Company ID is required'],
     index: true
   },
+  // A financial year belongs to one branch within a company.  `default: null`
+  // keeps previously-created financial years readable; new API records require
+  // this value through request validation.
+  branchId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Branch',
+    default: null,
+    index: true
+  },
   startDate: {
     type: Date,
     required: [true, 'Start date is required']
@@ -39,6 +48,8 @@ const financialYearSchema = new mongoose.Schema({
 }, {
   timestamps: true
 });
+
+financialYearSchema.index({ companyId: 1, branchId: 1, startDate: 1, endDate: 1 });
 
 const FinancialYear = mongoose.model('FinancialYear', financialYearSchema);
 
