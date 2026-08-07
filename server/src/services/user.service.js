@@ -114,6 +114,28 @@ const inviteUser = async ({ companyId, name, email, phone, role, companyName, se
     });
     await existingUser.save();
 
+    // Generate an invite token for the existing user so they can set password
+    const plainToken = crypto.randomBytes(32).toString('hex');
+    const tokenHash = hashSha256(plainToken);
+    const tokenExpiry = new Date(Date.now() + INVITE_TOKEN_EXPIRY_HOURS * 60 * 60 * 1000);
+
+    existingUser.passwordResetTokenHash = tokenHash;
+    existingUser.passwordResetExpires = tokenExpiry;
+
+    try {
+      await sendInviteEmail(email, plainToken, companyName);
+      // mark inviteSent on the newly added companyAccess entry
+      const idx = existingUser.companyAccess.findIndex(a => a.companyId.toString() === companyId.toString());
+      if (idx !== -1) {
+        existingUser.companyAccess[idx].inviteSent = true;
+      }
+      await existingUser.save();
+    } catch (err) {
+      const pino = require('pino');
+      const logger = pino();
+      logger.error({ userId: existingUser._id }, `Failed to send invite email to existing user: ${err.message}`);
+    }
+
     return { isNewUser: false, user: existingUser };
   }
 
@@ -138,11 +160,15 @@ const inviteUser = async ({ companyId, name, email, phone, role, companyName, se
       }]
     });
 
-    sendTemporaryPasswordEmail(email, temporaryPassword, companyName).catch((err) => {
+    try {
+      await sendTemporaryPasswordEmail(email, temporaryPassword, companyName);
+      newUser.companyAccess[0].inviteSent = true;
+      await newUser.save();
+    } catch (err) {
       const pino = require('pino');
       const logger = pino();
       logger.error({ userId: newUser._id }, `Failed to send temporary password email: ${err.message}`);
-    });
+    }
 
     return { isNewUser: true, user: newUser };
   }
@@ -171,12 +197,15 @@ const inviteUser = async ({ companyId, name, email, phone, role, companyName, se
     }]
   });
 
-  // Send invite email (non-blocking — never fail the invite if SMTP is down)
-  sendInviteEmail(email, plainToken, companyName).catch((err) => {
+  try {
+    await sendInviteEmail(email, plainToken, companyName);
+    newUser.companyAccess[0].inviteSent = true;
+    await newUser.save();
+  } catch (err) {
     const pino = require('pino');
     const logger = pino();
     logger.error({ userId: newUser._id }, `Failed to send invite email: ${err.message}`);
-  });
+  }
 
   return { isNewUser: true, user: newUser, inviteToken: plainToken };
 };

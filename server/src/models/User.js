@@ -43,6 +43,10 @@ const companyAccessSchema = new mongoose.Schema(
     },
     isActive: { type: Boolean, default: true },
     invitedAt: { type: Date },
+    // Whether an invite email (or temporary-password email) has been sent
+    // for this companyAccess entry. Used to avoid duplicate emails and to
+    // let background scripts pick up unsent invites.
+    inviteSent: { type: Boolean, default: false },
     /**
      * Set to now() the first time this user completes password setup after being invited.
      * Updated inside Module 1's reset-password handler once the user successfully
@@ -111,6 +115,11 @@ const userSchema = new mongoose.Schema({
 }, {
   timestamps: true
 });
+
+// Persist a flag per companyAccess entry to track whether an invite email
+// has already been sent for that entry. This lets external processes or
+// scripts find pending invites and send them when users are created directly
+// in the DB (e.g. imports).
 
 // Index on companyAccess.companyId for efficient GET /api/user?companyId= queries
 userSchema.index({ 'companyAccess.companyId': 1 });

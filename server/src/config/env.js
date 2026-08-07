@@ -17,7 +17,7 @@ const envSchema = z.object({
   SMTP_PORT: z.coerce.number().default(587),
   SMTP_USER: z.string().optional().or(z.literal('')),
   SMTP_PASS: z.string().optional().or(z.literal('')),
-  SMTP_FROM: z.string().default('Kevalon ERP <harsh.kevalon@gmail.com>'),
+  SMTP_FROM: z.string().default('Kevalon ERP <tilak.kevalon@gmail.com>'),
   ALLOWED_ORIGINS: z.string().default('http://localhost:3000'),
   CLIENT_URL: z.string().url().default('http://localhost:3000')
 });
