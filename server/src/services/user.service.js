@@ -91,6 +91,8 @@ const wouldSelfLockout = (callerUser, targetUserId, companyId) => {
  */
 const inviteUser = async ({ companyId, name, email, phone, role, companyName, sendTemporaryPassword }) => {
   const existingUser = await User.findOne({ email });
+  const normalizedRole = String(role || '').trim().toLowerCase();
+  const shouldSendTempPassword = sendTemporaryPassword || normalizedRole === 'accountant';
 
   if (existingUser) {
     // Check if already has access to this company
@@ -117,7 +119,7 @@ const inviteUser = async ({ companyId, name, email, phone, role, companyName, se
     return { isNewUser: false, user: existingUser };
   }
 
-  if (sendTemporaryPassword) {
+  if (shouldSendTempPassword) {
     const temporaryPassword = crypto.randomBytes(6).toString('base64').replace(/[^A-Za-z0-9]/g, 'A').slice(0, 10);
     const passwordHash = await hashPassword(temporaryPassword);
 
@@ -127,6 +129,7 @@ const inviteUser = async ({ companyId, name, email, phone, role, companyName, se
       phone,
       role,
       passwordHash,
+      temporaryPassword,
       mustChangePassword: true,
       isEmailVerified: false,
       companyAccess: [{

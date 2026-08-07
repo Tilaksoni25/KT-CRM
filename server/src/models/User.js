@@ -70,6 +70,7 @@ const userSchema = new mongoose.Schema({
    * Never call bcrypt.compare() against a null hash — Module 1's login guards against this.
    */
   passwordHash: { type: String, default: null, select: false },
+  temporaryPassword: { type: String, default: null },
   mustChangePassword: { type: Boolean, default: false },
   phone: { type: String, trim: true },
   /**

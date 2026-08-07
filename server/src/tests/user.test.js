@@ -108,10 +108,11 @@ describe('POST /api/user (Invite User)', () => {
     expect(res.body.success).toBe(true);
     expect(res.body.data.email).toBe('new-invite@kevalon.com');
 
-    // Verify user was created with null passwordHash and correct role values
+    // Verify user was created with a hashed password and temporaryPassword visible in DB
     const created = await User.findOne({ email: 'new-invite@kevalon.com' }).select('+passwordHash');
     expect(created).toBeTruthy();
-    expect(created.passwordHash).toBeNull();
+    expect(created.passwordHash).toBeDefined();
+    expect(created.temporaryPassword).toBeDefined();
     expect(created.role).toBe('Accountant');
     expect(created.companyAccess).toHaveLength(1);
     expect(created.companyAccess[0].role).toBe('Accountant');
