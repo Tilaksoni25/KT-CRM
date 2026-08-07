@@ -68,29 +68,24 @@ const inviteUser = async (req, res, next) => {
 
 const listUsers = async (req, res, next) => {
   try {
-    const { search, includeInactive } = req.query;
+    const { search, includeInactive, companyId: queryCompanyId } = req.query;
     const page = Math.max(1, parseInt(req.query.page) || 1);
     const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 20));
 
-    // Get companyId from logged-in user
-    const companyId = req.user?.companyId;
+    let companyId = queryCompanyId || req.user?.companyId;
+
+    if (!companyId && req.user?.companyAccess?.length > 0) {
+      const activeCompany = req.user.companyAccess.find((c) => c.isActive);
+      if (activeCompany) companyId = activeCompany.companyId;
+    }
 
     if (!companyId) {
       return res.status(400).json({
         success: false,
-        message: "Company ID not found for logged in user",
-        errorCode: "COMPANY_ID_REQUIRED"
+        message: 'Company ID not found',
+        errorCode: 'COMPANY_ID_REQUIRED'
       });
     }
-
-    // Base query: users who have a companyAccess entry for this company
-    const matchActive =
-      includeInactive === "true"
-        ? { "companyAccess.companyId": companyId }
-        : {
-            "companyAccess.companyId": companyId,
-            "companyAccess.isActive": true
-          };
 
     // Optional name/email search
     let searchFilter = {};
