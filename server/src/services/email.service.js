@@ -84,8 +84,16 @@ const sendInviteEmail = async (toEmail, plainToken, inviterCompanyName) => {
   return sendEmail({ to: toEmail, subject, text, html });
 };
 
+const sendTemporaryPasswordEmail = async (toEmail, temporaryPassword, inviterCompanyName) => {
+  const subject = 'Welcome to Kevalon Finance';
+  const text = `Hello,\n\nYou have been registered on Kevalon Finance for ${inviterCompanyName}.\n\nEmail: ${toEmail}\nTemporary Password: ${temporaryPassword}\n\nPlease log in and change your password immediately.\n\n${env.CLIENT_URL}`;
+  const html = `<p>Hello,</p><p>You have been registered on <strong>Kevalon Finance</strong> for <strong>${inviterCompanyName}</strong>.</p><p><strong>Email:</strong> ${toEmail}<br/><strong>Temporary Password:</strong> ${temporaryPassword}</p><p>Please log in and change your password immediately.</p><p>If you did not expect this email, please contact your administrator.</p>`;
+  return sendEmail({ to: toEmail, subject, text, html });
+};
+
 module.exports = {
   sendEmail,
   sendVerificationEmail,
-  sendInviteEmail
+  sendInviteEmail,
+  sendTemporaryPasswordEmail
 };

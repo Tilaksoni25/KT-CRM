@@ -68,6 +68,7 @@ const userSchema = new mongoose.Schema({
    * Never call bcrypt.compare() against a null hash — Module 1's login guards against this.
    */
   passwordHash: { type: String, default: null, select: false },
+  mustChangePassword: { type: Boolean, default: false },
   phone: { type: String, trim: true },
   /**
    * Legacy flat role field — used only for Module 1's auth bootstrapping (JWT payload, /me response).

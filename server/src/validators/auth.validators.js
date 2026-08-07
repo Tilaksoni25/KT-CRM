@@ -54,6 +54,13 @@ const verifyEmailSchema = z.object({
   token: z.string({ required_error: 'token is required' }).min(1, 'token cannot be empty')
 }).strict();
 
+const changePasswordSchema = z.object({
+  currentPassword: z.string().min(1, 'currentPassword cannot be empty').optional(),
+  newPassword: z.string({ required_error: 'newPassword is required' })
+    .min(8, 'newPassword must be at least 8 characters')
+    .regex(passwordRegex, 'newPassword must contain at least one letter and one number')
+}).strict();
+
 const resendVerificationEmailSchema = z.object({
   email: z.string({ required_error: 'email is required' }).email('invalid email address')
 }).strict();
@@ -65,6 +72,7 @@ module.exports = {
   logoutSchema,
   forgotPasswordSchema,
   resetPasswordSchema,
+  changePasswordSchema,
   sendOtpSchema,
   verifyOtpSchema,
   verifyEmailSchema,

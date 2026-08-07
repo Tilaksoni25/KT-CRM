@@ -155,6 +155,18 @@ const login = async (req, res, next) => {
 
     logger.info({ userId: user._id }, `User logged in successfully`);
 
+    if (user.mustChangePassword) {
+      return res.status(200).json({
+        success: true,
+        mustChangePassword: true,
+        data: {
+          accessToken: tokens.accessToken,
+          refreshToken: tokens.refreshToken,
+          ...buildUserOnboardingResponse(latestUser)
+        }
+      });
+    }
+
     return res.status(200).json({
       success: true,
       data: {
@@ -304,6 +316,51 @@ const resetPassword = async (req, res, next) => {
     return res.status(200).json({
       success: true,
       message: 'Password has been reset successfully. Please login with your new password.'
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * POST /api/auth/change-password
+ */
+const changePassword = async (req, res, next) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    const user = await User.findById(req.user._id).select('+passwordHash');
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    if (!user.mustChangePassword && !currentPassword) {
+      return res.status(400).json({
+        success: false,
+        message: 'Current password is required to change password'
+      });
+    }
+
+    if (currentPassword) {
+      const isCurrentValid = await comparePassword(currentPassword, user.passwordHash);
+      if (!isCurrentValid) {
+        return res.status(401).json({
+          success: false,
+          message: 'Current password is invalid'
+        });
+      }
+    }
+
+    user.passwordHash = await hashPassword(newPassword);
+    user.mustChangePassword = false;
+    await user.save();
+
+    return res.status(200).json({
+      success: true,
+      message: 'Password changed successfully.'
     });
   } catch (error) {
     next(error);
@@ -579,6 +636,7 @@ module.exports = {
   me,
   forgotPassword,
   resetPassword,
+  changePassword,
   sendOtp: sendOtpController,
   verifyOtp: verifyOtpController,
   verifyEmail,

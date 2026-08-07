@@ -7,6 +7,7 @@ const {
   me,
   forgotPassword,
   resetPassword,
+  changePassword,
   sendOtp,
   verifyOtp,
   verifyEmail,
@@ -25,6 +26,7 @@ const {
   logoutSchema,
   forgotPasswordSchema,
   resetPasswordSchema,
+  changePasswordSchema,
   sendOtpSchema,
   verifyOtpSchema,
   verifyEmailSchema,
@@ -53,6 +55,9 @@ router.post('/forgot-password', authLimiter, validateRequest(forgotPasswordSchem
 
 // 7. Reset password using valid token
 router.post('/reset-password', authLimiter, validateRequest(resetPasswordSchema), resetPassword);
+
+// 7.1 Change password for authenticated user
+router.post('/change-password', authenticate, validateRequest(changePasswordSchema), changePassword);
 
 // 8. Dispatch 6-digit OTP code (login or 2fa_setup)
 router.post('/send-otp', authLimiter, validateRequest(sendOtpSchema), sendOtp);

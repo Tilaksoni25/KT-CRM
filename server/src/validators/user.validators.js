@@ -19,7 +19,8 @@ const inviteUserSchema = z.object({
   role: z
     .string({ required_error: 'role is required' })
     .trim()
-    .min(1, 'role cannot be empty')
+    .min(1, 'role cannot be empty'),
+  sendTemporaryPassword: z.boolean().optional().default(false)
 }).strict();
 
 const updateUserSchema = z.object({

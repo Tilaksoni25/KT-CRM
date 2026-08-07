@@ -1,7 +1,7 @@
 const crypto = require('crypto');
 const User = require('../models/User');
-const { hashSha256 } = require('../utils/hash');
-const { sendInviteEmail } = require('./email.service');
+const { hashPassword, hashSha256 } = require('../utils/hash');
+const { sendInviteEmail, sendTemporaryPasswordEmail } = require('./email.service');
 const env = require('../config/env');
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -89,7 +89,7 @@ const wouldSelfLockout = (callerUser, targetUserId, companyId) => {
  * @param {string}  params.companyName  — used in the invite email subject
  * @returns {Promise<{ isNewUser: boolean, user: Object }>}
  */
-const inviteUser = async ({ companyId, name, email, phone, role, companyName }) => {
+const inviteUser = async ({ companyId, name, email, phone, role, companyName, sendTemporaryPassword }) => {
   const existingUser = await User.findOne({ email });
 
   if (existingUser) {
@@ -115,6 +115,35 @@ const inviteUser = async ({ companyId, name, email, phone, role, companyName }) 
     await existingUser.save();
 
     return { isNewUser: false, user: existingUser };
+  }
+
+  if (sendTemporaryPassword) {
+    const temporaryPassword = crypto.randomBytes(6).toString('base64').replace(/[^A-Za-z0-9]/g, 'A').slice(0, 10);
+    const passwordHash = await hashPassword(temporaryPassword);
+
+    const newUser = await User.create({
+      name,
+      email,
+      phone,
+      passwordHash,
+      mustChangePassword: true,
+      isEmailVerified: false,
+      companyAccess: [{
+        companyId,
+        role,
+        isActive: true,
+        invitedAt: new Date(),
+        joinedAt: null
+      }]
+    });
+
+    sendTemporaryPasswordEmail(email, temporaryPassword, companyName).catch((err) => {
+      const pino = require('pino');
+      const logger = pino();
+      logger.error({ userId: newUser._id }, `Failed to send temporary password email: ${err.message}`);
+    });
+
+    return { isNewUser: true, user: newUser };
   }
 
   // ── New user ────────────────────────────────────────────────────────────

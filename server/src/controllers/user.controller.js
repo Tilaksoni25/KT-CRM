@@ -18,7 +18,7 @@ const inviteUser = async (req, res, next) => {
       });
     }
 
-    const { companyId, name, email, phone, role } = parsed.data;
+    const { companyId, name, email, phone, role, sendTemporaryPassword } = parsed.data;
 
     // Fetch company name for the invite email subject
     const company = await Company.findById(companyId).select('name');
@@ -32,7 +32,7 @@ const inviteUser = async (req, res, next) => {
 
     let result;
     try {
-      result = await userService.inviteUser({ companyId, name, email, phone, role, companyName: company.name });
+      result = await userService.inviteUser({ companyId, name, email, phone, role, companyName: company.name, sendTemporaryPassword });
     } catch (err) {
       if (err.statusCode === 409) {
         return res.status(409).json({
@@ -44,18 +44,17 @@ const inviteUser = async (req, res, next) => {
       throw err;
     }
 
-    const { isNewUser, user, inviteToken } = result;
+    const { isNewUser, user } = result;
     return res.status(isNewUser ? 201 : 200).json({
       success: true,
       message: isNewUser
-        ? 'User invited successfully. An invite email has been sent.'
+        ? 'User invited successfully. An email has been sent.'
         : 'Existing user granted access to this company.',
       data: {
         userId: user._id,
         email: user.email,
         companyId,
-        role,
-        plainPassword: isNewUser ? inviteToken : undefined
+        role
       }
     });
   } catch (error) {
