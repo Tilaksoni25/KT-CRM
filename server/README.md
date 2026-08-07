@@ -85,6 +85,34 @@ Tests use `mongodb-memory-server` — no external DB required.
 
 ---
 
+## Module 08: Sales Invoice API Endpoints
+All endpoints have the base path `/api/invoice`. Use [invoice_endpoints.http](file:///c:/Users/LENOVO/Desktop/KT-CRM/server/invoice_endpoints.http) with the VS Code REST Client extension to test interactively.
+
+| Method | Path | Auth | Purpose |
+|--------|------|------|---------|
+| POST | `/api/invoice` | Yes | Create a sales invoice and auto-post a journal entry |
+| GET | `/api/invoice?companyId=` | Yes | List invoices with optional status/date/search filters |
+| GET | `/api/invoice/:id` | Yes | Fetch a single invoice detail |
+| PUT | `/api/invoice/:id` | Yes | Update an unpaid invoice |
+| DELETE | `/api/invoice/:id` | Yes | Cancel an invoice and create a reversal journal entry |
+| GET | `/api/invoice/:id/pdf` | Yes | Placeholder PDF export endpoint |
+
+### Business Rules Enforced
+- **AR Billing + Journal Entry:** Invoices are posted as receivables and automatically generate a double-entry journal posting through Module 12.
+- **No Hard Delete:** Cancellation flips the invoice to `CANCELLED` and links a reversal journal entry instead of deleting the document.
+- **Payment Lock:** Invoices with received payments cannot be edited or cancelled.
+- **Company/FY Scoping:** All invoice operations are validated against the company and active financial year.
+
+### Integration TODOs
+- Module 3 + Module 5: map customer AR ledger accounts for invoice posting.
+- Module 25: wire tax-rate logic and output GST account mapping.
+- Module 9: update `amountReceived` and `balanceDue` when payments are received.
+- Module 12: expand posting/reversal logic for richer accounting entry details.
+- Module 13/14: feed ledger and reports from invoice postings.
+- Module 20: hook due-date reminders and notification workflows.
+
+---
+
 ## Module 1: Auth API Endpoints
 All endpoints have the base path `/api/auth`. Use [auth_endpoints.http](file:///c:/Users/LENOVO/Desktop/KT-CRM/server/auth_endpoints.http) with the VS Code REST Client extension to test interactively.
 

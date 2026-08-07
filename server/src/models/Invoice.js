@@ -29,6 +29,7 @@ const invoiceSchema = new mongoose.Schema({
   taxTotal: { type: Number, required: true, min: 0 },
   grandTotal: { type: Number, required: true, min: 0 },
   roundOff: { type: Number, default: 0 },
+  amountReceived: { type: Number, default: 0, min: 0 },
   balanceDue: { type: Number, required: true, min: 0 },
   journalEntryId: { type: mongoose.Schema.Types.ObjectId, ref: 'JournalEntry', default: null },
   reversalJournalEntryId: { type: mongoose.Schema.Types.ObjectId, ref: 'JournalEntry', default: null },

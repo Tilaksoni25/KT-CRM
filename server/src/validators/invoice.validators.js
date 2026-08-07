@@ -38,7 +38,20 @@ const createInvoiceSchema = z.object({
   ...invoiceFields
 }).strict();
 
-const updateInvoiceSchema = z.object(invoiceFields).strict();
+const updateInvoiceSchema = z.object({
+  ...invoiceFields,
+  invoiceDate: isoDate.optional(),
+  dueDate: isoDate.nullable().optional(),
+  reference: z.string().trim().max(200).optional(),
+  lineItems: z.array(lineItemSchema).min(1).optional(),
+  subTotal: amount.optional(),
+  discountTotal: amount.optional(),
+  taxTotal: amount.optional(),
+  grandTotal: amount.optional(),
+  roundOff: z.coerce.number().finite().optional(),
+  notes: z.string().trim().max(5000).optional(),
+  meta: z.record(z.unknown()).optional()
+}).strict();
 
 const invoiceQuerySchema = z.object({
   companyId: objectId,

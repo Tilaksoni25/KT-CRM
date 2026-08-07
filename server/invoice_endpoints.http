@@ -19,6 +19,12 @@ Authorization: Bearer {{token}}
 GET {{baseUrl}}/{{invoiceId}}
 Authorization: Bearer {{token}}
 
+PUT {{baseUrl}}/{{invoiceId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{"invoiceDate":"2026-08-06","dueDate":"2026-08-20","reference":"PO-1001","lineItems":[{"description":"Consulting service","quantity":1,"rate":1000,"discount":0,"taxableAmount":1000,"taxAmount":180,"totalAmount":1180}],"subTotal":1000,"discountTotal":0,"taxTotal":180,"grandTotal":1180,"roundOff":0,"notes":"Updated invoice"}
+
 GET {{baseUrl}}/{{invoiceId}}/pdf
 Authorization: Bearer {{token}}
 
