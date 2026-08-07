@@ -47,7 +47,7 @@ const createFinancialYear = async (req, res, next) => {
       });
     }
 
-    const { companyId, startDate, endDate, yearLabel, isLocked } = req.body;
+    const { companyId, startDate, endDate, yearLabel, isLocked, status } = req.body;
 
     const start = new Date(startDate);
     const end = new Date(endDate);
@@ -89,7 +89,8 @@ const createFinancialYear = async (req, res, next) => {
         startDate: start,
         endDate: end,
         yearLabel,
-        ...(isLocked !== undefined ? { isLocked } : {})
+        ...(isLocked !== undefined ? { isLocked } : {}),
+        ...(status !== undefined ? { status } : {})
       }
     ], sessionOpts);
 

@@ -20,6 +20,11 @@ const financialYearSchema = new mongoose.Schema({
     required: [true, 'Year label (e.g. "2025-26") is required'],
     trim: true
   },
+  status: {
+    type: String,
+    enum: ['active', 'inactive'],
+    default: 'active'
+  },
   isLocked: {
     type: Boolean,
     default: false

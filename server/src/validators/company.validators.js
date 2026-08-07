@@ -67,7 +67,8 @@ const createFYSchema = z.object({
   startDate: z.string({ required_error: 'Start date is required' }).datetime({ message: 'Invalid start date datetime string' }).or(z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Invalid start date format (YYYY-MM-DD)')),
   endDate: z.string({ required_error: 'End date is required' }).datetime({ message: 'Invalid end date datetime string' }).or(z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Invalid end date format (YYYY-MM-DD)')),
   yearLabel: z.string({ required_error: 'Year label is required' }).min(1, 'Year label cannot be empty'),
-  isLocked: z.boolean().optional()
+  isLocked: z.boolean().optional(),
+  status: z.enum(['active', 'inactive']).optional()
 }).strict();
 
 module.exports = {
