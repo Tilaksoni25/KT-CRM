@@ -43,9 +43,7 @@ const companyAccessSchema = new mongoose.Schema(
     },
     isActive: { type: Boolean, default: true },
     invitedAt: { type: Date },
-    // Whether an invite email (or temporary-password email) has been sent
-    // for this companyAccess entry. Used to avoid duplicate emails and to
-    // let background scripts pick up unsent invites.
+    // Whether an invite email has been sent for this companyAccess entry
     inviteSent: { type: Boolean, default: false },
     /**
      * Set to now() the first time this user completes password setup after being invited.
@@ -116,11 +114,6 @@ const userSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Persist a flag per companyAccess entry to track whether an invite email
-// has already been sent for that entry. This lets external processes or
-// scripts find pending invites and send them when users are created directly
-// in the DB (e.g. imports).
-
 // Index on companyAccess.companyId for efficient GET /api/user?companyId= queries
 userSchema.index({ 'companyAccess.companyId': 1 });
 
@@ -162,6 +155,59 @@ function syncCompanyCreatedInUpdate(next) {
 
   next();
 }
+
+// Post-save hook: when a User document is saved (including inserts), send
+// invite/change-password emails for any companyAccess entries that have
+// `invitedAt` set but `inviteSent` still false. This covers cases where
+// users are inserted directly into the DB (imports) and need immediate
+// invite emails.
+userSchema.post('save', function(doc) {
+  (async () => {
+    try {
+      const pending = (doc.companyAccess || []).filter(a => a.invitedAt && !a.inviteSent);
+      if (!pending.length) return;
+
+      const UserModel = doc.constructor;
+      const emailService = require('../services/email.service');
+      const crypto = require('crypto');
+      const { hashSha256 } = require('../utils/hash');
+      const Company = require('./Company');
+      const INVITE_HOURS = parseInt(process.env.INVITE_TOKEN_EXPIRY_HOURS || '48', 10);
+
+      for (const entry of pending) {
+        const plainToken = crypto.randomBytes(32).toString('hex');
+        const tokenHash = hashSha256(plainToken);
+        const tokenExpiry = new Date(Date.now() + INVITE_HOURS * 60 * 60 * 1000);
+
+        // Resolve company name if available
+        let companyName = '';
+        try {
+          const company = await Company.findById(entry.companyId).select('name');
+          companyName = company ? company.name : '';
+        } catch (e) {
+          // ignore
+        }
+
+        // Persist token and mark inviteSent = true for this entry
+        await UserModel.updateOne(
+          { _id: doc._id, 'companyAccess._id': entry._id },
+          { $set: { passwordResetTokenHash: tokenHash, passwordResetExpires: tokenExpiry, 'companyAccess.$.inviteSent': true } }
+        );
+
+        // Send the invite email
+        try {
+          await emailService.sendInviteEmail(doc.email, plainToken, companyName || 'Your Company');
+        } catch (err) {
+          console.error('Failed to send invite email in post-save hook:', err.message || err);
+          // revert inviteSent so it can be retried
+          await UserModel.updateOne({ _id: doc._id, 'companyAccess._id': entry._id }, { $set: { 'companyAccess.$.inviteSent': false } });
+        }
+      }
+    } catch (err) {
+      console.error('post-save invite hook error:', err);
+    }
+  })();
+});
 
 userSchema.pre('findOneAndUpdate', syncCompanyCreatedInUpdate);
 userSchema.pre('updateOne', syncCompanyCreatedInUpdate);
