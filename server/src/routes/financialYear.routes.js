@@ -41,6 +41,9 @@ router.use(authenticate);
  *               yearLabel:
  *                 type: string
  *                 example: "2025-26"
+ *               isLocked:
+ *                 type: boolean
+ *                 description: Optional lock state when creating a financial year
  *     responses:
  *       201:
  *         description: Financial year created successfully

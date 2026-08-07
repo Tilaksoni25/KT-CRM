@@ -47,7 +47,7 @@ const createFinancialYear = async (req, res, next) => {
       });
     }
 
-    const { companyId, startDate, endDate, yearLabel } = req.body;
+    const { companyId, startDate, endDate, yearLabel, isLocked } = req.body;
 
     const start = new Date(startDate);
     const end = new Date(endDate);
@@ -88,7 +88,8 @@ const createFinancialYear = async (req, res, next) => {
         companyId,
         startDate: start,
         endDate: end,
-        yearLabel
+        yearLabel,
+        ...(isLocked !== undefined ? { isLocked } : {})
       }
     ], sessionOpts);
 
@@ -105,6 +106,7 @@ const createFinancialYear = async (req, res, next) => {
 
     return res.status(201).json({
       success: true,
+      message: 'Financial Year created successfully',
       data: {
         ...fy.toObject(),
         nextStep: 'DASHBOARD'
