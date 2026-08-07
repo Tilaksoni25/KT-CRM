@@ -125,6 +125,7 @@ const inviteUser = async ({ companyId, name, email, phone, role, companyName, se
       name,
       email,
       phone,
+      role,
       passwordHash,
       mustChangePassword: true,
       isEmailVerified: false,
@@ -156,6 +157,7 @@ const inviteUser = async ({ companyId, name, email, phone, role, companyName, se
     name,
     email,
     phone,
+    role,
     passwordHash: null, // not usable until invite is accepted
     isEmailVerified: false,
     passwordResetTokenHash: tokenHash,

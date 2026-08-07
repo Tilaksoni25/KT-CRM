@@ -1,6 +1,10 @@
 const nodemailer = require('nodemailer');
 const env = require('../config/env');
 const pino = require('pino');
+const {
+  buildInviteEmailContent,
+  buildTemporaryPasswordEmailContent
+} = require('./email.templates');
 
 const logger = pino({
   transport: env.NODE_ENV === 'development' ? { target: 'pino-pretty' } : undefined
@@ -63,9 +67,7 @@ const sendEmail = async ({ to, subject, text, html }) => {
  */
 const sendVerificationEmail = async (toEmail, plainToken) => {
   const verifyLink = `${env.CLIENT_URL}/verify-email?token=${plainToken}`;
-  const subject = 'Verify your Kevalon ERP email address';
-  const text = `Please verify your email address by clicking the link below (valid for 24 hours):\n\n${verifyLink}`;
-  const html = `<p>Welcome to Kevalon ERP!</p><p>Please verify your email address by clicking the link below (valid for 24 hours):</p><p><a href="${verifyLink}">${verifyLink}</a></p>`;
+  const { subject, text, html } = buildInviteEmailContent('Kevalon ERP', verifyLink);
   return sendEmail({ to: toEmail, subject, text, html });
 };
 
@@ -78,16 +80,18 @@ const sendVerificationEmail = async (toEmail, plainToken) => {
  */
 const sendInviteEmail = async (toEmail, plainToken, inviterCompanyName) => {
   const inviteLink = `${env.CLIENT_URL}/set-password?token=${plainToken}`;
-  const subject = `You've been invited to join ${inviterCompanyName} on Kevalon ERP`;
-  const text = `You have been invited to join ${inviterCompanyName} on Kevalon ERP.\n\nPlease click the link below to set your password and activate your account (valid for 48 hours):\n\n${inviteLink}\n\nIf you did not expect this invite, you can safely ignore this email.`;
-  const html = `<p>You have been invited to join <strong>${inviterCompanyName}</strong> on Kevalon ERP.</p><p>Please click the link below to set your password and activate your account (valid for 48 hours):</p><p><a href="${inviteLink}">${inviteLink}</a></p><p><em>If you did not expect this invite, you can safely ignore this email.</em></p>`;
+  const { subject, text, html } = buildInviteEmailContent(inviterCompanyName, inviteLink);
   return sendEmail({ to: toEmail, subject, text, html });
 };
 
 const sendTemporaryPasswordEmail = async (toEmail, temporaryPassword, inviterCompanyName) => {
-  const subject = 'Welcome to Kevalon Finance';
-  const text = `Hello,\n\nYou have been registered on Kevalon Finance for ${inviterCompanyName}.\n\nEmail: ${toEmail}\nTemporary Password: ${temporaryPassword}\n\nPlease log in and change your password immediately.\n\n${env.CLIENT_URL}`;
-  const html = `<p>Hello,</p><p>You have been registered on <strong>Kevalon Finance</strong> for <strong>${inviterCompanyName}</strong>.</p><p><strong>Email:</strong> ${toEmail}<br/><strong>Temporary Password:</strong> ${temporaryPassword}</p><p>Please log in and change your password immediately.</p><p>If you did not expect this email, please contact your administrator.</p>`;
+  const loginUrl = env.CLIENT_URL;
+  const { subject, text, html } = buildTemporaryPasswordEmailContent(
+    inviterCompanyName,
+    toEmail,
+    temporaryPassword,
+    loginUrl
+  );
   return sendEmail({ to: toEmail, subject, text, html });
 };
 
