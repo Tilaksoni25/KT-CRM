@@ -72,7 +72,10 @@ const sendEmail = async ({ to, subject, text, html, templateParams }) => {
       return await sendWithEmailJs({ to, subject, text, html, templateParams });
     } catch (error) {
       logger.error(`EmailJS failed to send email to ${to}: ${error.message}`);
-      if (env.NODE_ENV === 'development' || env.NODE_ENV === 'test') {
+      // Tests intentionally run without an email provider. In every real
+      // environment, surface the provider error instead of reporting a
+      // successful password-reset request when no email was sent.
+      if (env.NODE_ENV === 'test') {
         return { messageId: 'emailjs-fallback-id', preview: true, error: error.message };
       }
       throw error;
